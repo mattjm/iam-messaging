@@ -1,0 +1,6 @@
+Good leaktest
+
+sqs recv
+
+$ valgrind -v --tool=memcheck --leak-check=full  ./demo_recv -n 10
+ 

@@ -1,0 +1,40 @@
+{
+ "aws": {
+   "snsHost":  "sns.us-east-1.amazonaws.com",
+   "snsArn":  "arn:aws:sns:us-east-1:611509864246:gws-gws2-activity-send",
+   "snsArn-prod":  "arn:aws:sns:us-east-1:611509864246:iam-gws-activity-prod",
+   "snsKeyId": "AKIAISFHVSSSB4JERSMA",
+   "snsKey":   "ViI4DrB+ZjJTHZm2sONveYi57syAT0IBKjLV2c/G",
+   "sqsKeyId": "AKIAISFHVSSSB4JERSMA",
+   "sqsKey":   "ViI4DrB+ZjJTHZm2sONveYi57syAT0IBKjLV2c/G",
+   "sqsQueue":  "iam-gws-prod-g00gle",
+   "sqsUrl":  "https://sqs.us-east-1.amazonaws.com/611509864246/iam-gws-prod-gaagle"
+   },
+
+ "certs": [
+   {"id": "iamsig1",
+    "url": "https://groups.uw.edu/pubkeys/sign1.crt",
+    "keyfile": "/data/local/etc/sign1.key"
+     },
+   {"id": "iamsig2",
+    "url": "https://groups.uw.edu/pubkeys/sign2.crt",
+    "keyfile": "/data/local/etc/sign2.key"
+     }
+   ],
+
+ "crypts": [
+   {"id": "iamcrypt1",
+    "key": "JIXDTLw40iyYAO6c1xAXAA=="
+    },
+   {"id": "iamcrypt2",
+    "key": "Bdn3KaLAbukHFf1QPB+ltA=="
+    }
+   ],
+
+ "syslog_facility": "local5",
+ "syslog_name": "iammsg",
+ "verbose": "0",
+ "end": "end"
+}
+
+
