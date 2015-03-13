@@ -68,6 +68,14 @@ def iam_get_aws_queue():
     # print '%r messages in the queue' % (queue.count())
     return queue
 
+def iam_aws_create_queue(queue_name):
+    global _aws_config 
+    sqs_connection = SQSConnection(_aws_config['snsKeyId'], _aws_config['snsKey'])
+    if sqs_connection==None:
+        log.error('AWS queue connect failed')
+        return none
+    sqs_connection.create_queue(queue_name)
+    
 
 def iam_aws_send_message(msg, context, cryptid, signid):
     global _aws_config 
@@ -79,7 +87,32 @@ def iam_aws_send_message(msg, context, cryptid, signid):
     arn = _aws_config['snsArn']
     sns_connection.publish(arn, b64msg, 'iam-message')
 
+
+def iam_aws_create_topic(topic_name):
+    global _aws_config 
+    sns_connection = SNSConnection(_aws_config['snsKeyId'], _aws_config['snsKey'])
+    if sns_connection==None:
+        log.error('AWS connect failed')
+        return none
+    sns_connection.create_topic(topic_name)
     
+
+def iam_aws_subscribe_queue(topic_name, queue_name):
+    global _aws_config 
+    sns_connection = SNSConnection(_aws_config['snsKeyId'], _aws_config['snsKey'])
+    if sns_connection==None:
+        log.error('AWS connect failed')
+        return none
+    sqs_connection = SQSConnection(_aws_config['sqsKeyId'], _aws_config['sqsKey'])
+    queue = sqs_connection.get_queue(queue_name)
+    if queue==None:
+        log(log_alert, "Could not get queue '%s'!" % (queue_name))
+        return none
+    arn = _aws_config['snsArnRoot'] + topic_name
+    sns_connection.subscribe_sqs_queue(arn, queue)
+   
+
+
 def iam_aws_recv_message():
     sqs_queue = iam_get_aws_queue()
     sqs_msg = sqs_queue.read()
