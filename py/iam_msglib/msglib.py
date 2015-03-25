@@ -173,20 +173,29 @@ def iam_process_message(message):
       certurl = iamHeader[u'signingCertUrl']
       if not certurl in _public_keys:
           log(log_info, 'Fetching signing cert: ' + certurl)
+          pem = ''
 
-          if _ca_file != None:
-              http = urllib3.PoolManager(
-                  cert_reqs='CERT_REQUIRED', # Force certificate check.
-                  ca_certs=_ca_file,  
-              )
+          if certurl.startswith('file:'):
+              with open(certurl[5:], 'r') as f:
+                  pem = f.read()
+
+          elif certurl.startswith('http'):
+              if _ca_file != None:
+                  http = urllib3.PoolManager(
+                      cert_reqs='CERT_REQUIRED', # Force certificate check.
+                      ca_certs=_ca_file,  
+                  )
+              else:
+                  http = urllib3.PoolManager()
+              certdoc = http.request('GET', certurl)
+              if certdoc.status != 200:
+                  log(log_err, 'sws cert get failed: ' + certdoc.status)
+                  save_message_and_exit (sqsstr)  # can't go on
+              log(log_info, 'got it')
+              pem = certdoc.data
           else:
-              http = urllib3.PoolManager()
-          certdoc = http.request('GET', certurl)
-          if certdoc.status != 200:
-              log(log_err, 'sws cert get failed: ' + certdoc.status)
-              save_message_and_exit (sqsstr)  # can't go on
-          log(log_info, 'got it')
-          pem = certdoc.data
+              save_message_and_exit ('invalid cert url: ' + certurl)
+
           x509 = X509.load_cert_string(pem)
           key = x509.get_pubkey()
           _public_keys[certurl] = key
