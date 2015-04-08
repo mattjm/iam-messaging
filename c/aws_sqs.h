@@ -19,6 +19,7 @@
 #define sqs_h
 
 typedef struct SQSMessage_ {
+   struct SQSMessage_ *next;
    char *messageId;
    char *type;
    char *subject;
@@ -31,6 +32,7 @@ typedef struct SQSMessage_ {
 
 int sqs_init();
 SQSMessage *sqs_getMessage();
+SQSMessage *sqs_getMessages(int max);
 int sqs_getInfo();
 void freeSQSMessage(SQSMessage *sqs);
 

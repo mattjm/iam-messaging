@@ -47,17 +47,17 @@ int base64_test() {
    
    char *pt = iam_getFile(safeDupString(config, "base64_text"));
    if (debug) {
-      printf(" > b64: plain: (%d) [%s]\n", strlen(pt), pt);
+      printf(" > b64: plain: (%zu) [%s]\n", strlen(pt), pt);
    }
 
    char *b64 = iam_dataToBase64(pt, strlen(pt));
    if (debug) {
-      printf(" > b64: base64: (%d) [%s]\n", strlen(b64), b64);
+      printf(" > b64: base64: (%zu) [%s]\n", strlen(b64), b64);
    }
 
    dt = iam_base64ToText(b64);
    if (debug) {
-      printf(" > b64: decoded: (%d) [%s]\n", strlen(dt), dt);
+      printf(" > b64: decoded: (%zu) [%s]\n", strlen(dt), dt);
    }
 
    if (strcmp(pt, dt)) {

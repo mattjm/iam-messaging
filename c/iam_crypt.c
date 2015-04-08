@@ -35,7 +35,7 @@
 #include <openssl/x509v3.h>
 
 #include <curl/curl.h>
-#include <curl/types.h>
+// #include <curl/types.h>
 #include <curl/easy.h>
 
 int iamVerbose = 0;
@@ -138,8 +138,9 @@ char *iam_timestampNow() {
    struct tm *gm = &sgm;
    gmtime_r(&t, &sgm);
    gettimeofday(&tv, NULL);
+   int msec = tv.tv_usec/1000;
    snprintf(ret, 64, "%4d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-     gm->tm_year+1900, gm->tm_mon+1, gm->tm_mday, gm->tm_hour, gm->tm_min, gm->tm_sec, (tv.tv_usec/1000));
+     gm->tm_year+1900, gm->tm_mon+1, gm->tm_mday, gm->tm_hour, gm->tm_min, gm->tm_sec, msec);
    return (ret);
 }
 
@@ -169,8 +170,9 @@ char *iam_urlencode (char *txt) {
 /* ---------- web page retriever ---------------- */
 
 typedef struct MemBuf_ {
-   int len;
    char *mem;
+   int len;
+   int pos;
 } MemBuf;
 
 static size_t page_reader(void *buf, size_t len, size_t num, void *wp)
@@ -179,27 +181,37 @@ static size_t page_reader(void *buf, size_t len, size_t num, void *wp)
   int z = realsize;
   if (wp) {
      MemBuf *mb = (MemBuf*) wp;
-     mb->mem = realloc(mb->mem, mb->len + realsize + 1);
-     memcpy(&(mb->mem[mb->len]), buf, realsize);
-     mb->len += realsize;
-     mb->mem[mb->len] = 0;
+     if (mb->len<mb->pos+realsize+1) {
+        mb->len += realsize + 1;
+        mb->mem = realloc(mb->mem, mb->len);
+     }
+     memcpy(&(mb->mem[mb->pos]), buf, realsize);
+     mb->pos += realsize;
+     mb->mem[mb->pos] = '\0';
   }
   return (realsize);
 }
 
-// returns good page or null on error
-char *iam_getPage(char *url, int *resp, char **errmsg) {
 
-   char curlerror[CURL_ERROR_SIZE];
-   MemBuf *membuf = (MemBuf*) malloc(sizeof(MemBuf));
-   membuf->len = 0;
-   membuf->mem = (char*) malloc(4);
+/*
+ * Url page getters
+ */
+
+static CURL *curl = NULL;
+MemBuf *membuf = NULL;
+
+// initialize a curl struct
+int getCurlHandle() {
+   membuf = (MemBuf*) malloc(sizeof(MemBuf));
+   membuf->mem = (char*) malloc(1024);
+   memset(membuf->mem, 0, 1024);
+   membuf->len = 1024;
+   membuf->pos = 0;
    membuf->mem[0] = '\0';
 
-   if (resp) *resp = 0;
-   if (errmsg) *errmsg = NULL;
+   char curlerror[CURL_ERROR_SIZE];
 
-   CURL *curl = curl_easy_init();
+   curl = curl_easy_init();
    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, page_reader);
    curl_easy_setopt(curl, CURLOPT_VERBOSE, lzero);
    curl_easy_setopt(curl, CURLOPT_INFILESIZE, lzero);
@@ -209,35 +221,54 @@ char *iam_getPage(char *url, int *resp, char **errmsg) {
 
    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, lzero);
    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, lzero);
-   curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
+   // curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
 
    curl_easy_setopt(curl, CURLOPT_UPLOAD, lzero);
    curl_easy_setopt(curl, CURLOPT_POST, lzero );
    curl_easy_setopt(curl, CURLOPT_WRITEDATA, membuf);
    curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, curlerror);
+}
+
+int cleanupCurlHandle() {
+   curl_easy_cleanup(curl);
+   curl = NULL;
+   free(membuf->mem);
+   free(membuf);
+   membuf = NULL;
+}
+
+// get one page
+
+char *iam_getPage(char *url, int *resp, char **errmsg) {
+
+   char curlerror[CURL_ERROR_SIZE];
+
+   if (resp) *resp = 0;
+   if (errmsg) *errmsg = NULL;
+ 
+   if (!curl) getCurlHandle();
    curl_easy_setopt(curl, CURLOPT_URL, url);
 
    CURLcode status = curl_easy_perform(curl);
    if (status!=CURLE_OK) {
       // syslog(LOG_ERR, "aws getmsg failed: %s", curlerror);
+      // retry one time
       if (errmsg) *errmsg = strdup(curlerror);
       return (NULL);
    }
 
    long http_resp = 0;
    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_resp);
-   curl_easy_cleanup(curl);
    if (resp!=NULL) *resp = http_resp;
    if (http_resp>=300) {
+      syslog(LOG_ERR, "get of %s failed: %ld", url, http_resp);
       snprintf(curlerror, CURL_ERROR_SIZE, "get of %s failed: %ld", url, http_resp);
-      syslog(LOG_ERR, curlerror);
       if (errmsg) *errmsg = strdup(curlerror);
-      free(membuf->mem);
-      free(membuf);
+      cleanupCurlHandle();
       return (NULL);
    }
-   char *rsp = membuf->mem;
-   free(membuf);
+   char *rsp = strdup(membuf->mem);
+   membuf->pos = 0;
    return (rsp);
 }
 

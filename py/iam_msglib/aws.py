@@ -64,8 +64,7 @@ def iam_get_aws_queue():
         log(log_alert, "Could not connect to '%s'!" % (_aws_config['sqsQueue']))
         return none
     queue.set_message_class(RawMessage)
-    log(log_info, '%r messages in the queue' % (queue.count()))
-    # print '%r messages in the queue' % (queue.count())
+    log(log_debug, '%r messages in the queue' % (queue.count()))
     return queue
 
 def iam_aws_create_queue(queue_name):
@@ -74,7 +73,12 @@ def iam_aws_create_queue(queue_name):
     if sqs_connection==None:
         log.error('AWS queue connect failed')
         return none
-    sqs_connection.create_queue(queue_name)
+    ret = sqs_connection.create_queue(queue_name)
+    if ret==None:
+        log.error('AWS queue create failed for %s' % queue_name)
+        return none
+    return ret
+        
     
 
 def iam_aws_send_message(msg, context, cryptid, signid):
@@ -82,7 +86,7 @@ def iam_aws_send_message(msg, context, cryptid, signid):
     b64msg = iam_format_message(msg, context, cryptid, signid)
     sns_connection = SNSConnection(_aws_config['snsKeyId'], _aws_config['snsKey'])
     if sns_connection==None:
-        log.error('AWS connect failed')
+        log.error('AWS sns connect failed')
         return none
     arn = _aws_config['snsArn']
     sns_connection.publish(arn, b64msg, 'iam-message')
@@ -92,16 +96,20 @@ def iam_aws_create_topic(topic_name):
     global _aws_config 
     sns_connection = SNSConnection(_aws_config['snsKeyId'], _aws_config['snsKey'])
     if sns_connection==None:
-        log.error('AWS connect failed')
+        log.error('AWS sns connect failed')
         return none
-    sns_connection.create_topic(topic_name)
+    ret = sns_connection.create_topic(topic_name)
+    if ret==None:
+        log.error('AWS topic create failed for %s' % topic_name)
+        return none
+    return ret
     
 
 def iam_aws_subscribe_queue(topic_name, queue_name):
     global _aws_config 
     sns_connection = SNSConnection(_aws_config['snsKeyId'], _aws_config['snsKey'])
     if sns_connection==None:
-        log.error('AWS connect failed')
+        log.error('AWS sns connect failed')
         return none
     sqs_connection = SQSConnection(_aws_config['sqsKeyId'], _aws_config['sqsKey'])
     queue = sqs_connection.get_queue(queue_name)
@@ -122,6 +130,22 @@ def iam_aws_recv_message():
     if msg != None:
         sqs_queue.delete_message(sqs_msg)
     return msg
+
+def iam_aws_recv_and_process(handler, max=1):
+    sqs_queue = iam_get_aws_queue()
+    msgs = sqs_queue.get_messages(max)
+    nmsg = len(msgs)
+    nvalid = 0
+    for m in msgs:
+        msg = iam_process_message(m)
+        if msg==None:
+            sqs_queue.delete_message(m)
+            continue
+        nvalid += 1
+        ret = handler(msg)
+        if ret:
+            sqs_queue.delete_message(m)
+    return (nmsg, nvalid)
 
 def iam_aws_init(awscfg):
     global _aws_config 

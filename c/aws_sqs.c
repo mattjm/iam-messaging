@@ -27,7 +27,7 @@
 #include <pthread.h>
 
 #include <curl/curl.h>
-#include <curl/types.h>
+// #include <curl/types.h>
 #include <curl/easy.h>
 
 #include "cJSON.h"
@@ -220,18 +220,20 @@ static char *decodeText(char *in, char *end) {
    return ret;
 }
 
-SQSMessage *sqs_getMessage() {
+SQSMessage *sqs_getMessages(max_messages) {
    char *curlerror;
    int resp;
    SQSMessage *ret = NULL;
+   SQSMessage *retl = NULL;
 
+   if (max_messages<1) return NULL;
    char *timestamp = iam_timestampNow();
    char *e_timestamp = iam_urlencode(timestamp);
    int bufl = 1024;
    char *qs = (char*) malloc(bufl);
    snprintf(qs, bufl,
-      "AWSAccessKeyId=%s&Action=%s&AttributeName.1=All&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=%s",
-      awsKeyId, sqsRecvAction, e_timestamp);
+      "AWSAccessKeyId=%s&Action=%s&AttributeName.1=All&MaxNumberOfMessages=%d&SignatureMethod=HmacSHA256&SignatureVersion=2&Timestamp=%s",
+      awsKeyId, sqsRecvAction, max_messages, e_timestamp);
    char *sigin = (char*) malloc(bufl);
    snprintf(sigin, bufl, "GET\n%s\n%s\n%s", sqsHost, sqsPath, qs);
    char *sig = iam_computeAWSSignature256(awsKey, sigin);
@@ -251,25 +253,53 @@ SQSMessage *sqs_getMessage() {
    free(sig);
    free(e_sig);
 
-   // decode the text message
-   char *msg_json = NULL;
-   char *msg_handle = NULL;
-   char *s = strstr(txt, "<Body>");
-   if (s) {
+   // decode the text messages: list on <message>
+   // simple minded xml parsing
+   char *msgp = txt;
+   char *msge = txt;
+
+   // printf("txt[%s]\n", txt);
+   
+   while (msge!=NULL  && (msgp=strstr(msge, "<Message>"))) {
+      msge = strstr(msgp, "</Message>");
+      if (!msge) break;  // required
+
+      char *msg_json = NULL;
+      char *msg_handle = NULL;
+      char *s = strstr(msgp, "<Body>");
+      if (!s) break;
       char *t = strstr(s, "</Body>");
-      if (t) msg_json = decodeText(s+6, t);
+      if (!t) break;
+
+      msg_json = decodeText(s+6, t);
+      s = strstr(msgp, "<ReceiptHandle>");
+      if (s) {
+         char *t = strstr(s, "</ReceiptHandle>");
+         if (t) msg_handle = decodeText(s+15, t);
+      }
+      if (msg_json && msg_handle) {
+         SQSMessage *sqsm = newSQSMessage(msg_json, msg_handle);
+         if (sqsm) {   // link at end
+            if (retl) {
+               retl->next = sqsm;
+            } else {
+               ret = sqsm;
+            }
+            retl = sqsm;
+         }
+      }
+      iam_free(msg_json);
+      iam_free(msg_handle);
    }
-   s = strstr(txt, "<ReceiptHandle>");
-   if (s) {
-      char *t = strstr(s, "</ReceiptHandle>");
-      if (t) msg_handle = decodeText(s+15, t);
-   }
-   if (msg_json && msg_handle) ret = newSQSMessage(msg_json, msg_handle);
-   iam_free(msg_json);
-   iam_free(msg_handle);
+
    iam_free(txt);
    return (ret);
 }
+
+SQSMessage *sqs_getMessage() {
+   return (sqs_getMessages(1));
+}
+
 
 /* delete a message
  */

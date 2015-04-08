@@ -96,6 +96,7 @@ main(int argc, char **argv) {
         printf("no more messages\n");
         break;
      }
+     // sleep(60);
   }
   printf("%d processed\n", n);
   exit (0);

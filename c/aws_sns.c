@@ -27,7 +27,7 @@
 #include <pthread.h>
 
 #include <curl/curl.h>
-#include <curl/types.h>
+// #include <curl/types.h>
 #include <curl/easy.h>
 
 #include "cJSON.h"
@@ -135,8 +135,8 @@ typedef struct pageReaderData_ {
 static size_t page_reader(void *buf, size_t len, size_t num, void *wd)
 {
   pageReaderData *prd = (pageReaderData*) wd;
-  TRACE(stderr, "..recv %d(%d) bytes\n", len, num);
-  TRACE(stderr, "[%s]\n", buf);
+  TRACE(stderr, "..recv %zu(%zu) bytes\n", len, num);
+  TRACE(stderr, "[%s]\n", (char*)buf);
   char *s;
 
   // look for OK msg
@@ -179,7 +179,7 @@ int sns_sendMessageArn(char *sub, char *msg, int msgl, char *host, char *e_arn) 
    char *timestamp = iam_timestampNow();
    char *e_timestamp = iam_urlencode(timestamp);
    int bufl = strlen(e_b64msg)+strlen(e_sub)+1024;
-   TRACE(stderr, "bufl=%d, b64msg=%d, e_b64msg=%d, e_sub=%d, e_timestamp=%d\n",
+   TRACE(stderr, "bufl=%d, b64msg=%zu, e_b64msg=%zu, e_sub=%zu, e_timestamp=%zu\n",
         bufl, strlen(b64msg), strlen(e_b64msg), strlen(e_sub), strlen(e_timestamp) );
    char *qs = (char*) malloc(bufl);
    char *qspost = (char*) malloc(bufl);
@@ -195,7 +195,7 @@ int sns_sendMessageArn(char *sub, char *msg, int msgl, char *host, char *e_arn) 
 
    // compose the url
    snprintf(qspost, bufl, "http://%s/", host);
-   TRACE(stderr, "bufl=%d, sigin=%d, qspost=%d\n", bufl, strlen(sigin), strlen(qspost));
+   TRACE(stderr, "bufl=%d, sigin=%zu, qspost=%zu\n", bufl, strlen(sigin), strlen(qspost));
    
    // printf("posting: [%s]\n", sigin);
 

@@ -82,7 +82,6 @@ def _build_sig_msg(header, txt):
          header[u'messageType'] + '\n' + header[u'sender'] + '\n' + \
          header[u'signingCertUrl'] + '\n' + header[u'timestamp'] + '\n' + header[u'version'] + '\n' + \
          txt + '\n'
-    # print "sigmsg: " + sigmsg
     return sigmsg
 
 
@@ -113,21 +112,17 @@ def iam_format_message(msg, context, cryptid, signid):
         cipher = M2Crypto.EVP.Cipher(alg='aes_128_cbc', key=_crypt_keys[cryptid], iv=iv, op=1)
         txt = cipher.update(msg) + cipher.final()
         enctxt64 = base64.b64encode(txt)
-        # print 'enctxt64 = ' + enctxt64
     else:
-        # print 'message will not be encrypted'
         enctxt64 = base64.b64encode(msg)
     
     # gen the signature
     sigmsg = _build_sig_msg(iamHeader, enctxt64)
-    # print '[' + sigmsg + ']'
 
     key = _private_keys[signid]['key']
     key.sign_init()
     key.sign_update(sigmsg)
     sig = key.sign_final()
     sig64 = base64.b64encode(sig)
-    # print 'sig = ' + sig64
     iamHeader['signature'] = sig64
 
     body = {}
@@ -137,7 +132,6 @@ def iam_format_message(msg, context, cryptid, signid):
     iamMessage['header'] = iamHeader
     iamMessage['body'] = enctxt64
 
-    # print iamMessage
     m64 = base64.b64encode(json.dumps(iamMessage))
     return m64
     
@@ -152,22 +146,22 @@ def iam_process_message(message):
 
     # get the body of the SQS message
     sqsstr = message.get_body().encode('utf8','ignore')  # signature, et.al. needs utf8
-    # print 'sqsstr:' + sqsstr
     sqsmsg = json.loads(sqsstr)
 
     # get the iam message
     msgstr = base64.b64decode(sqsmsg['Message']).encode('utf8','ignore')
-    # print 'msgstr:' + msgstr
     iam_message = json.loads(msgstr)
 
+    if 'header' not in iam_message: 
+        log.info('not an iam message')
+        return None
     iamHeader = iam_message['header']
-    # print iamHeader
 
     try:
       # check the version
       if iamHeader[u'version'] != 'UWIT-1':
           log(log_err, 'unknown version: ' + iamHeader[u'version'])
-          return
+          return None
 
       # the signing cert should be cached most of the time
       certurl = iamHeader[u'signingCertUrl']
@@ -190,46 +184,38 @@ def iam_process_message(message):
               certdoc = http.request('GET', certurl)
               if certdoc.status != 200:
                   log(log_err, 'sws cert get failed: ' + certdoc.status)
-                  save_message_and_exit (sqsstr)  # can't go on
-              log(log_info, 'got it')
+                  log_message_and_exit (sqsstr)  # can't go on
+              log(log_debug, 'got it')
               pem = certdoc.data
           else:
-              save_message_and_exit ('invalid cert url: ' + certurl)
+              log_message_and_exit ('invalid cert url: ' + certurl)
 
           x509 = X509.load_cert_string(pem)
           key = x509.get_pubkey()
           _public_keys[certurl] = key
-      # print "got sig cert"
 
       enctxt64 = iam_message[u'body']
-      # print "emsg: " + enctxt64
 
       # check the signature
       sigmsg = _build_sig_msg(iamHeader, enctxt64)
-      # print 'sigmsg = [%s]' % sigmsg
       sig = base64.b64decode(iamHeader[u'signature'])
-      # print 'sig = [%s]' % iamHeader[u'signature']
       pubkey = _public_keys[certurl]
-      # print 'have pubkey from ' + certurl
 
       pubkey.reset_context(md='sha1')
       pubkey.verify_init()
       pubkey.verify_update(sigmsg)
       if pubkey.verify_final(sig)!=1:
           log(log_err, '*** signature fails verification ***')
-          print "verify fails"
-          # save_message_and_exit(sqsstr)  # can't go on
-      # print 'sig verify ok'
+          log_message_and_exit(sqsstr)  # can't go on
 
       # decrypt the message
       if 'keyId' in iamHeader:
           iv64 = iamHeader[u'iv']
-          # print "iv: " + iv64
           iv = base64.b64decode(iv64)
           keyid = iamHeader[u'keyId']
-          # print 'looking for crypt key ' + keyid
           if not keyid in _crypt_keys:
-              print keyid + ' not found'
+              log(log_err, 'key ' + keyid + ' not found')
+              log_message_and_exit(sqsstr)  # can't go on
           key = _crypt_keys[keyid]
  
           enctxt =  base64.b64decode(enctxt64)
@@ -237,20 +223,19 @@ def iam_process_message(message):
           txt = cipher.update(enctxt) + cipher.final()
       else:
           txt = base64.b64decode(enctxt64)
-          # print 'message was not encrypted'
 
       txt = filter(lambda x: x in string.printable, txt)
-      # print '[' + txt + ']'
       iam_message[u'body'] = txt
       # un-base64 the context
       try:
           iamHeader[u'messageContext'] = base64.b64decode(iamHeader[u'messageContext'])
       except TypeError:
-          print 'context not base64'
+          log(log_info,  'context not base64')
+          return None
     except KeyError:
         if 'AlarmName' in iam_message:
             log(log_debug, 'alarm: ' + iam_message['AlarmName'])
-            return True
+            return iam_message
 
         log(log_err, 'Unknown message key: ' )
         return None
@@ -278,7 +263,7 @@ def iam_init(cfg):
     for k in keys:
         id = k['id']
         k64 = k['key']
-        # print 'adding crypt key ' + id
+        log(log_debug,  'adding crypt key ' + id)
         kbin = base64.b64decode(k64)
         _crypt_keys[id] = kbin
 

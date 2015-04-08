@@ -108,7 +108,7 @@ main(int argc, char **argv) {
    }
    msg->sender = strdup("iamtest-c");
    for (i=0;i<nsend;i++) {
-      printf("sending %d bytes\n", strlen(msg->message));
+      printf("sending %zu bytes\n", strlen(msg->message));
       if (host) iam_msgSendArn(msg, cryptid, signid, host, arn);
       else iam_msgSend(msg, cryptid, signid);
    }
