@@ -3,4 +3,8 @@ Good leaktest
 sqs recv
 
 $ valgrind -v --tool=memcheck --leak-check=full  ./demo_recv -n 10
+
+My ubuntu valgrind reports a lot of uninitialized errors which I think are wrongly reported.
+
+
  

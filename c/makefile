@@ -8,7 +8,7 @@ DEST=/data/local
 DEST_LIB=$(DEST)/lib
 DEST_INC=$(DEST)/include
 
-all:	demo_send demo_recv libiam_msg.a test thread_send leaktest
+all:	demo_send demo_recv demo_recv_multi libiam_msg.a test thread_send leaktest
 
 .c.o:	$(INCL)
 	$(CC) -c $(CFLAGS) $(@:.o=.c)

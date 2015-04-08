@@ -39,7 +39,7 @@ void usage() {
 main(int argc, char **argv) {
    
    char *cfgfile = "etc/aws.conf.js";
-   int lim = 1000000;
+   int lim = 1000;
    char *limt;
 
    prog = argv[0];
