@@ -38,7 +38,7 @@ void usage() {
 main(int argc, char **argv) {
    
    char *cfgfile = "etc/aws.conf.js";
-   int ntest = 5;
+   int ntest = 10;
    int verbose = 0;
 
    prog = argv[0];
@@ -71,28 +71,37 @@ main(int argc, char **argv) {
 
   int nm = sqs_getNumMessages();
   fprintf(stderr, "%d messages in the queue\n", nm);
-  fprintf(stderr, "receiving %d \n", ntest);
+  fprintf(stderr, "receiving %d at a time \n", ntest);
   
   int n, i;
   char *s;
+  int tot = 0;
   
+  for (;;) {
    SQSMessage *smsgs = sqs_getMessages(ntest);
-   SQSMessage *smsg = smsgs;
+
+   if (!smsgs) {
+      printf("none, sleep 5min\n");
+      sleep (60*5);
+      continue;
+   }
 
    i = 1;
+
+   SQSMessage *smsg = smsgs;
    while (smsg) {
-      printf("recv %d\n", i);
+      if (verbose) printf("recv %d\n", i);
       if (!smsg->messageId) {
          IamMessage *err = iam_newIamMessage();
          err->error = smsg->verified;
          err->message = strdup(smsg->message);
-         printf("err: %s\n", err->message);
+         printf("err at %d: %s\n", tot, err->message);
          freeSQSMessage(smsg);
       } else {
          IamMessage *msg = iam_msgParse(smsg->message);
 
-         printf("message received: type: %s\n", msg->messageType);
          if (verbose) {
+             printf("message received: type: %s\n", msg->messageType);
              printf("uuid: %s\n", msg->uuid);
              printf("sent: %s\n", msg->timestamp);
              printf("sender: %s\n", msg->sender);
@@ -106,7 +115,10 @@ main(int argc, char **argv) {
       freeSQSMessage(smsg);
       smsg = next;
       i++;
+      tot += 1;
    }
+   printf("..%d\n", tot);
+  }
 
   printf("%d processed\n", n);
   exit (0);
