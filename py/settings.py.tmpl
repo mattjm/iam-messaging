@@ -1,0 +1,82 @@
+# tempalte
+
+# local config for workday
+
+DEBUG = False
+
+RUN_MODE = 'Live'
+RUN_MODE = 'File'
+
+RESTTOOLS_CA_BUNDLE = '/home/fox/certs/uw-incommon-ca.crt'
+
+AWS_CONF = {
+    'SNS_HOST':  'xxxx',
+    'SNS_ARN':  'xxxx',
+    'SNS_ARNROOT':  'xxxx',
+    'SNS_KEYID': 'xxxx',
+    'SNS_KEY':   'xxxx',
+    'SQS_KEYID': 'xxxx',
+    'SQS_KEY':   'xxxx',
+    'SQS_QUEUE1':  'xxxx',
+    'SQS_QUEUE':  'xxxx',
+}
+
+AZURE_CONF = {
+    'NAMESPACE':  'xxxx',
+    'ACCESS_KEY_NAME':  'xxxx',
+    'ACCESS_KEY_VALUE':  'xxxx',
+    'TOPIC_NAME':  'xxxx',
+    'SUBSCRIPTION_NAME': 'xxxx',
+}
+
+IAM_CONF = {
+    'CERTS':  [
+     {"ID": "iamsig1",
+     "URL": "file:/home/fox/certs/x315.crt",
+     "KEYFILE": "/home/fox/certs/x315.key"
+      }
+    ],
+    'CRYPTS': [
+     {"ID": "iamcrypt1",
+      "KEY": "xxxxxxxxxxxxxxxxxxAXAA=="
+      }
+     ],
+    'CA_FILE': {}
+}
+
+              
+
+LOGGING = {
+    'version': 1,
+    'formatters': {
+        'plain': {
+            'format': '%(message)s'
+        },
+        'syslog': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+        },
+    },
+    'handlers': {
+        'default': {
+            'class': 'logging.StreamHandler',
+            'level': 'INFO',
+            'stream': 'ext://sys.stdout',
+            'formatter': 'plain',
+        },
+        'syslog': {
+            'class': 'logging.handlers.SysLogHandler',
+            'level': 'DEBUG',
+            'formatter': 'syslog',
+            'facility': 'LOG_LOCAL7'
+        }
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['default'],
+        
+    },
+    'suds': {
+        'level': 'INFO',
+        'handlers': ['default']
+    },
+}

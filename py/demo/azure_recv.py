@@ -1,7 +1,5 @@
 #
-# IAM AWS messaging tools
-#
-# sample sqs reciever
+# IAM Azure receive test
 #
 
 import json
@@ -22,7 +20,7 @@ import logging
 logger = logging.getLogger()
 
 from messagetools.iam_message import crypt_init
-from messagetools.aws import AWS
+from messagetools.ms_azure import Azure
 
 import settings
 
@@ -59,6 +57,18 @@ def signal_handler(sig_num, frame):
    still_alive = False
 
 
+def msg_handler(message):
+
+   hdr = message[u'header']
+   print 'message received: type: ' + hdr[u'messageType']
+   print 'uuid: ' + hdr[u'messageId']
+   print 'sent: ' + hdr[u'timestamp']
+   print 'sender: ' + hdr[u'sender']
+   print 'contentType: ' + hdr[u'contentType']
+   print 'context: [%s]' % hdr[u'messageContext']
+   print 'message: [%s]' % message[u'body']
+   return True
+
 #
 # ---------------- demo recv main --------------------------
 #
@@ -73,7 +83,7 @@ parser.add_option('-m', '--max_messages', action='store', type='int', dest='maxm
 parser.add_option('', '--count', action='store_true', dest='count_only', help='just count the messages onthe queue', default=False)
 options, args = parser.parse_args()
 
-max_messages = 0
+max_messages = 1
 if options.maxmsg: max_messages = options.maxmsg
 
 logging.config.dictConfig(settings.LOGGING)
@@ -100,38 +110,11 @@ signal.signal(signal.SIGUSR1, signal_handler)
 idle1 = 0  # 1 minute counter
 idle5 = 0  # 5 minute counter
 
-aws = AWS(settings.AWS_CONF)
+azure = Azure(settings.AZURE_CONF)
 
 nmsg = 0
-while still_alive:
 
-   message = aws.recv_message()
-   if message==None: 
-      sleep_sec = 1800
-      if idle5>0:
-         idle5 += 1
-         sleep_sec = 300
-      else:
-         idle1 += 1 
-         if idle1>=10: idle5 = 1
-         sleep_sec = 60
-      logging.debug('sleep %d seconds' % (sleep_sec))
-      time.sleep(sleep_sec)
-      continue
-    
-   idle1 = idle5 = 0     
-   hdr = message[u'header']
-   print 'message received: type: ' + hdr[u'messageType']
-   print 'uuid: ' + hdr[u'messageId']
-   print 'sent: ' + hdr[u'timestamp']
-   print 'sender: ' + hdr[u'sender']
-   print 'contentType: ' + hdr[u'contentType']
-   print 'context: [%s]' % hdr[u'messageContext']
-   print 'message: [%s]' % message[u'body']
-
-   nmsg += 1
-   if nmsg==max_messages:
-      break
+azure.recv_and_process(msg_handler, max_messages)
 
 logger.info('Exiting')
 print '%d messages processed' %(nmsg)

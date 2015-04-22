@@ -31,6 +31,13 @@ To receive messages from an SQS queue:
 
 ----------------------------------------------------------------
 
+Threading
+
+The receiver uses a persistent CURL connection.  This means you can 
+use it in only one thread.
+
+-----------------------------------------------------------------
+
 
 
 

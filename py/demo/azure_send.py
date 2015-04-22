@@ -1,7 +1,5 @@
 #
-# IAM AWS messaging tools
-#
-# sample sns sender
+# IAM Azure send test
 #
 
 import json
@@ -21,7 +19,7 @@ import threading
 import logging
 
 from messagetools.iam_message import crypt_init
-from messagetools.aws import AWS
+from messagetools.ms_azure import Azure
 
 import settings
 
@@ -41,7 +39,7 @@ options, args = parser.parse_args()
 
 logging.config.dictConfig(settings.LOGGING)
 logger = logging.getLogger()
-logger.info("aws event sender starting.")
+logger.info("azure event sender starting.")
 
 crypt_init(settings.IAM_CONF)
 
@@ -53,8 +51,8 @@ cryptkey = 'iamcrypt1'
 if options.nocrypt:
    cryptkey = None
 
-aws = AWS(settings.AWS_CONF)
+azure = Azure(settings.AZURE_CONF)
 
-aws.send_message(msg, 'something specific to the test', cryptkey, 'iamsig1')
+azure.send_message(msg, 'something specific to the test', cryptkey, 'iamsig1')
 
 
