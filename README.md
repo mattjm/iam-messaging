@@ -1,4 +1,8 @@
-# iam-messaging
-Libraries for AWS and Azure messaging
+## Python messaging library
 
-Libraries for python and c
+These libraries send and receive messages on AWS and (later) Azure message busses.
+
+For python, at least, mock message capability is provided
+
+
+
