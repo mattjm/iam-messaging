@@ -47,12 +47,12 @@ logger = logging.getLogger(__name__)
 
 class File(object):
 
-    def __init__(self, config):
-
+    def __init__(self, conf):
+        self._conf = conf
         self._event_no = 0
 
     def recv_message(self):
-        message = get_mockdata_message('aws', self._config['SQS_QUEUE'], self._event_no)
+        message = get_mockdata_message('aws', self._conf['SQS_QUEUE'], self._event_no)
         self._event_no += 1
         return message
     
@@ -62,7 +62,7 @@ class File(object):
 
         logger.debug('recv and proc: no=%d, max=%d' % (self._event_no, max))
         for n in range(0,max):
-           message = get_mockdata_message('aws', self._config['SQS_QUEUE'], self._event_no)
+           message = get_mockdata_message('aws', self._conf['SQS_QUEUE'], self._event_no)
          
            if message==None: 
                break
@@ -77,21 +77,21 @@ class File(object):
 
 class Live(object):
 
-    def __init__(self, config):
-        self._config = config
+    def __init__(self, conf):
+        self._conf = conf
 
     def send_message(self, msg, context, cryptid, signid):
-        sns_connection = boto.connect_sns(aws_access_key_id=self._config['SNS_KEYID'], aws_secret_access_key=self._config['SNS_KEY'])
+        sns_connection = boto.connect_sns(aws_access_key_id=self._conf['SNS_KEYID'], aws_secret_access_key=self._conf['SNS_KEY'])
         b64msg = encode_message(msg, context, cryptid, signid)
-        sns_connection.publish(self._config['SNS_ARN'], b64msg, 'iam-message')
+        sns_connection.publish(self._conf['SNS_ARN'], b64msg, 'iam-message')
 
 
     def get_queue(self):
     
-        sqs_connection = boto.connect_sqs(aws_access_key_id=self._config['SQS_KEYID'], aws_secret_access_key=self._config['SQS_KEY'])
-        queue = sqs_connection.get_queue(self._config['SQS_QUEUE'])
+        sqs_connection = boto.connect_sqs(aws_access_key_id=self._conf['SQS_KEYID'], aws_secret_access_key=self._conf['SQS_KEY'])
+        queue = sqs_connection.get_queue(self._conf['SQS_QUEUE'])
         if queue==None:
-            logger.alert("Could not connect to '%s'!" % (self._config['SQS_QUEUE']))
+            logger.alert("Could not connect to '%s'!" % (self._conf['SQS_QUEUE']))
             return queue
         queue.set_message_class(RawMessage)
         logger.debug('%r messages in the queue' % (queue.count()))
@@ -99,7 +99,7 @@ class Live(object):
             
         
     def create_topic(self, topic_name):
-        sns_connection = boto.connect_sns(aws_access_key_id=self._config['SNS_KEYID'], aws_secret_access_key=self._config['SNS_KEY'])
+        sns_connection = boto.connect_sns(aws_access_key_id=self._conf['SNS_KEYID'], aws_secret_access_key=self._conf['SNS_KEY'])
         if sns_connection==None:
             loger.error('AWS sns connect failed')
             return none
@@ -111,7 +111,7 @@ class Live(object):
 
 
     def create_queue(self, queue_name):
-        sqs_connection = boto.connect_sqs(aws_access_key_id=self._config['SQS_KEYID'], aws_secret_access_key=self._config['SQS_KEY'])
+        sqs_connection = boto.connect_sqs(aws_access_key_id=self._conf['SQS_KEYID'], aws_secret_access_key=self._conf['SQS_KEY'])
         if sqs_connection==None:
             loger.error('AWS sqs connect failed')
             return none
@@ -151,10 +151,10 @@ class Live(object):
         return (nmsg, nvalid)
     
     def subscribe_queue(self, topic_name, queue_name):
-        sns_connection = boto.connect_sns(aws_access_key_id=self._config['SNS_KEYID'], aws_secret_access_key=self._config['SNS_KEY'])
-        sqs_connection = boto.connect_sqs(aws_access_key_id=self._config['SQS_KEYID'], aws_secret_access_key=self._config['SQS_KEY'])
+        sns_connection = boto.connect_sns(aws_access_key_id=self._conf['SNS_KEYID'], aws_secret_access_key=self._conf['SNS_KEY'])
+        sqs_connection = boto.connect_sqs(aws_access_key_id=self._conf['SQS_KEYID'], aws_secret_access_key=self._conf['SQS_KEY'])
         queue = sqs_connection.get_queue(queue_name)
-        arn = self._config['SNS_ARNROOT'] + topic_name
+        arn = self._conf['SNS_ARNROOT'] + topic_name
         sns_connection.subscribe_sqs_queue(arn, queue)
 
 

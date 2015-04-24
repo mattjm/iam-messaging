@@ -29,7 +29,6 @@ from dao import AWS_DAO
 
 class AWS(object):
 
-    # conf is an object 
     def __init__(self, conf):
         self._conf = conf
         

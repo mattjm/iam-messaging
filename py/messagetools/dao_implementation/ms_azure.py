@@ -38,12 +38,12 @@ logger = logging.getLogger(__name__)
 
 class File(object):
 
-    def __init__(self, config):
-
+    def __init__(self, conf):
+        self._conf = conf
         self._event_no = 0
 
     def recv_message(self):
-        message = get_mockdata_message('ms_azure', self._config['SQS_QUEUE'], self._event_no)
+        message = get_mockdata_message('ms_azure', self._conf['SQS_QUEUE'], self._event_no)
         self._event_no += 1
         return message
     
@@ -53,7 +53,7 @@ class File(object):
 
         logger.debug('recv and proc: no=%d, max=%d' % (self._event_no, max))
         for n in range(0,max):
-           message = get_mockdata_message('ms_azure', self._config['SQS_QUEUE'], self._event_no)
+           message = get_mockdata_message('ms_azure', self._conf['SQS_QUEUE'], self._event_no)
          
            if message==None: 
                break
@@ -68,21 +68,21 @@ class File(object):
 
 class Live(object):
 
-    def __init__(self, config):
-        self._config = config
-        self._topic = config['TOPIC_NAME']
-        self._subscr = config['SUBSCRIPTION_NAME']
+    def __init__(self, conf):
+        self._conf = conf
+        self._topic = conf['TOPIC_NAME']
+        self._subscr = conf['SUBSCRIPTION_NAME']
 
     def _get_bus_service(self):
-        return ServiceBusService(service_namespace=self._config['NAMESPACE'],
-                                 shared_access_key_name=self._config['ACCESS_KEY_NAME'],
-                                 shared_access_key_value=self._config['ACCESS_KEY_VALUE'])
+        return ServiceBusService(service_namespace=self._conf['NAMESPACE'],
+                                 shared_access_key_name=self._conf['ACCESS_KEY_NAME'],
+                                 shared_access_key_value=self._conf['ACCESS_KEY_VALUE'])
 
     def send_message(self, msg, context, cryptid, signid, properties={}):
         bus_service = self._get_bus_service()
         b64msg = encode_message(msg, context, cryptid, signid)
         ms_msg = Message(b64msg, custom_properties=properties)
-        bus_service.send_topic_message(self._config['TOPIC_NAME'], ms_msg)
+        bus_service.send_topic_message(self._conf['TOPIC_NAME'], ms_msg)
 
     def create_topic(self, topic_name):
         bus_service = self._get_bus_service()
@@ -93,8 +93,8 @@ class Live(object):
         bus_service.create_subscription(topic_name, name)
 
     def recv_message(self, peek=False):
-        subscription_name=self._config['SUBSCRIPTION_NAME']
-        topic_name = self._config['TOPIC_NAME']
+        subscription_name=self._conf['SUBSCRIPTION_NAME']
+        topic_name = self._conf['TOPIC_NAME']
         bus_service = self._get_bus_service()
         ms_msg = bus_service.receive_subscription_message(topic_name, subscription_name, peek_lock=peek)
         msg = decode_message(ms_msg.body)
