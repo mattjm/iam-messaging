@@ -24,7 +24,7 @@
 import M2Crypto
 from M2Crypto import BIO, RSA, EVP, X509
 
-import simplejson as json
+import json
 import uuid
 import datetime
 import dateutil.parser
@@ -41,6 +41,9 @@ import urllib3
 
 import threading
 
+from exceptions import SignatureVerifyException
+from exceptions import CryptKeyException
+from exceptions import SigningCertException
 
 # ----- global vars (to this module) ------------------
 
@@ -62,15 +65,11 @@ logger = logging.getLogger(__name__)
 #
 # -------------------------------------
 #
-def log_message_and_exit(message):
-    logging.info(message)
-    exit(1) 
 
 #
 # accumulate header fields for signature
 #
 def _build_sig_msg(header, txt):
-  
     sigmsg = header[u'contentType'] + '\n'
     if 'keyId' in header:
         sigmsg = sigmsg + header[u'iv'] + '\n' + header[u'keyId'] + '\n'
@@ -78,8 +77,7 @@ def _build_sig_msg(header, txt):
          header[u'messageType'] + '\n' + header[u'sender'] + '\n' + \
          header[u'signingCertUrl'] + '\n' + header[u'timestamp'] + '\n' + header[u'version'] + '\n' + \
          txt + '\n'
-    return sigmsg
-
+    return sigmsg.encode('ascii')
 
 #
 #  create a signed (and encrypted) iam message
@@ -99,9 +97,13 @@ def encode_message(msg, context, cryptid, signid):
     iamHeader['sender'] = 'iam-msg'
 
     iamHeader['timestamp'] = datetime.datetime.utcnow().isoformat()
+    if signid not in _private_keys:
+        raise SigningCertException(keyid=signid, msg='not found')
     iamHeader['signingCertUrl'] = _private_keys[signid]['url']
 
     if cryptid!=None:
+        if cryptid not in _crypt_keys:
+            raise CryptKeyException(keyid=cryptid, msg='not found')
         iamHeader['keyId'] = cryptid
         iv = os.urandom(16)
         iamHeader['iv'] = base64.b64encode(iv)
@@ -115,6 +117,7 @@ def encode_message(msg, context, cryptid, signid):
     sigmsg = _build_sig_msg(iamHeader, enctxt64)
 
     key = _private_keys[signid]['key']
+    key.reset_context(md='sha1')
     key.sign_init()
     key.sign_update(sigmsg)
     sig = key.sign_final()
@@ -143,6 +146,7 @@ def decode_message(b64msg):
     # get the iam message
     msgstr = base64.b64decode(b64msg).encode('utf8','ignore')
     iam_message = json.loads(msgstr)
+
 
     if 'header' not in iam_message: 
         logging.info('not an iam message')
@@ -176,11 +180,11 @@ def decode_message(b64msg):
               certdoc = http.request('GET', certurl)
               if certdoc.status != 200:
                   logger.error('sws cert get failed: ' + certdoc.status)
-                  log_message_and_exit (sqsstr)  # can't go on
+                  raise SigningCertException(url=certurl, status=certdoc.status)
               logger.debug('got it')
               pem = certdoc.data
           else:
-              log_message_and_exit ('invalid cert url: ' + certurl)
+              raise SigningCertException(url=certurl, status=-1)
 
           x509 = X509.load_cert_string(pem)
           key = x509.get_pubkey()
@@ -189,16 +193,15 @@ def decode_message(b64msg):
       enctxt64 = iam_message[u'body']
 
       # check the signature
+
       sigmsg = _build_sig_msg(iamHeader, enctxt64)
       sig = base64.b64decode(iamHeader[u'signature'])
       pubkey = _public_keys[certurl]
-
       pubkey.reset_context(md='sha1')
       pubkey.verify_init()
       pubkey.verify_update(sigmsg)
       if pubkey.verify_final(sig)!=1:
-          logger.error('*** signature fails verification ***')
-          log_message_and_exit(sqsstr)  # can't go on
+          raise SignatureVerifyException()
 
       # decrypt the message
       if 'keyId' in iamHeader:
@@ -207,7 +210,7 @@ def decode_message(b64msg):
           keyid = iamHeader[u'keyId']
           if not keyid in _crypt_keys:
               logger.error('key ' + keyid + ' not found')
-              log_message_and_exit(sqsstr)  # can't go on
+              raise CryptKeyException(keyid=keyid, msg='not found')
           key = _crypt_keys[keyid]
  
           enctxt =  base64.b64decode(enctxt64)

@@ -82,7 +82,8 @@ class Live(object):
         bus_service = self._get_bus_service()
         b64msg = encode_message(msg, context, cryptid, signid)
         ms_msg = Message(b64msg, custom_properties=properties)
-        bus_service.send_topic_message(self._conf['TOPIC_NAME'], ms_msg)
+        ret = bus_service.send_topic_message(self._conf['TOPIC_NAME'], ms_msg)
+        return ret
 
     def create_topic(self, topic_name):
         bus_service = self._get_bus_service()
