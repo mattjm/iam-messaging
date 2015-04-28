@@ -91,7 +91,7 @@ class Live(object):
         sqs_connection = boto.connect_sqs(aws_access_key_id=self._conf['SQS_KEYID'], aws_secret_access_key=self._conf['SQS_KEY'])
         queue = sqs_connection.get_queue(self._conf['SQS_QUEUE'])
         if queue==None:
-            logger.alert("Could not connect to '%s'!" % (self._conf['SQS_QUEUE']))
+            logger.critical("Could not connect to '%s'!" % (self._conf['SQS_QUEUE']))
             return queue
         queue.set_message_class(RawMessage)
         logger.debug('%r messages in the queue' % (queue.count()))
@@ -140,7 +140,8 @@ class Live(object):
         logger.info('live recv-proc: %d msg, max=%d' % (nmsg, max))
         nvalid = 0
         for m in msgs:
-            msg = decode_message(m)
+            sqsmsg = json.loads(m.get_body().encode('utf8','ignore'))
+            msg = decode_message(sqsmsg['Message'])
             if msg==None:
                 sqs_queue.delete_message(m)
                 continue
