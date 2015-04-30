@@ -82,8 +82,13 @@ class Azure_DAO(DAO_BASE):
     def create_topic(self, name):
         return self._create_topic(name)
 
-    def send_message(self, msg, context, cryptid, signid):
-        return self._send_message(msg, context, cryptid, signid)
+    def send_message(self, msg, context, cryptid, signid, properties):
+        dao = self._getDAO()
+        response = dao.send_message(msg, context, cryptid, signid, properties)
+        return response
+
+    def was_send_message(self, msg, context, cryptid, signid, properties):
+        return self._send_message(msg, context, cryptid, signid, properties)
 
     def create_subscription(self, topic_name, name):
         return self._create_subscription(topic_name, name)
@@ -96,6 +101,16 @@ class Azure_DAO(DAO_BASE):
 
     def subscribe_queue(self, topic_name, queue_name):
         return self._subscribe_queue(topic_name, queue_name)
+
+    def add_rule(self, topic_name, subscription_name, rule_name, rule_value):
+        dao = self._getDAO()
+        response = dao.add_rule(topic_name, subscription_name, rule_name, rule_value)
+        return response
+
+    def remove_rule(self, topic_name, subscription_name, rule_name):
+        dao = self._getDAO()
+        response = dao.remove_rule(topic_name, subscription_name, rule_name)
+        return response
 
     def _getDAO(self):
         if settings.RUN_MODE=='Live':

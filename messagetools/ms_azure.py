@@ -40,9 +40,9 @@ class Azure(object):
         response = dao.create_topic(name)
         return response
 
-    def send_message(self, msg, context, cryptid, signid):
+    def send_message(self, msg, context, cryptid, signid, properties={}):
         dao = Azure_DAO(self._conf)
-        response = dao.send_message(msg, context, cryptid, signid)
+        response = dao.send_message(msg, context, cryptid, signid, properties)
         return response
 
 
@@ -63,21 +63,12 @@ class Azure(object):
         response = dao.recv_and_process(handler, max)
         return response
 
-    # Queue actions
-
-    def create_queue(self, name):
+    def add_rule(self, topic_name, subscription_name, rule_name, rule_value):
         dao = Azure_DAO(self._conf)
-        response = dao.create_queue(name)
+        response = dao.add_rule(topic_name, subscription_name, rule_name, rule_value)
         return response
 
-    def recv_queue_message(self, peek=False):
+    def remove_rule(self, topic_name, subscription_name, rule_name):
         dao = Azure_DAO(self._conf)
-        response = dao.recv_queue_message(peek)
+        response = dao.remove_rule(topic_name, subscription_name, rule_name)
         return response
-
-    def recv_queue_and_process(self, handler, max=1):
-        dao = Azure_DAO(self._conf)
-        response = dao.recv_queue_and_process(handler, max)
-        return response
-        
-

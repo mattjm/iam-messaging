@@ -91,7 +91,8 @@ class Live(object):
 
     def create_subscription(self, topic_name, name):
         bus_service = self._get_bus_service()
-        bus_service.create_subscription(topic_name, name)
+        ret = bus_service.create_subscription(topic_name, name)
+        print ret
 
     def recv_message(self, peek=False):
         subscription_name=self._conf['SUBSCRIPTION_NAME']
@@ -107,9 +108,31 @@ class Live(object):
     def recv_and_process(self, handler, max=1):
         bus_service = self._get_bus_service()
         ms_msg = bus_service.receive_subscription_message(self._topic, self._subscr, peek_lock=True)
+        dmsg = decode_message(ms_msg.body)
+        if dmsg is None:
+            print 'removing invalid message'
+            ms_msg.delete()
+            return 1
         ret = handler(decode_message(ms_msg.body))
         if ret:
+            print 'deleting'
             ms_msg.delete()
         else:
             ms_msg.unlock()
         return 1
+
+    def add_rule(self, topic_name, subscription_name, rule_name, rule_value):
+        bus_service = self._get_bus_service()
+        rule = Rule()
+        rule.filter_type = 'SqlFilter'
+        rule.filter_expression = rule_value
+        ret = bus_service.create_rule(topic_name, subscription_name, rule_name, rule)
+        print ret
+
+    def remove_rule(self, topic_name, subscription_name, rule_name):
+        if rule_name == '-default-':
+            rule_name = DEFAULT_RULE_NAME
+        bus_service = self._get_bus_service()
+        ret = bus_service.delete_rule(topic_name, subscription_name, rule_name)
+        print ret
+

@@ -51,9 +51,10 @@ cryptkey = 'iamcrypt1'
 if options.nocrypt:
    cryptkey = None
 
-azure = Azure(settings.AZURE_CONF)
+# azure = Azure(settings.AZURE_CONF)
+azure = Azure(settings.AZURE_CONF_2)
 
-resp = azure.send_message(msg, 'something specific to the test', cryptkey, 'iamsig1')
+resp = azure.send_message(msg, 'Message with group u_spud.', cryptkey, 'iamsig1', properties={'Group-Stem':'u_fox'})
 print resp
 
 
