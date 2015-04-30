@@ -78,9 +78,7 @@ if options.operation=='ar':
         exit 
     logger.info("add rule: namespace='%s', topic='%s', subscription='%s', name='%s', value='%s'" %
         (conf['NAMESPACE'], options.topic, options.subscription, options.rule_name, options.rule_value))
-    v = 'Group-Stem=\'"u_fox"\''
-    print 'v[%s]'%v
-    azure.add_rule(options.topic, options.subscription, options.rule_name, v)
+    azure.add_rule(options.topic, options.subscription, options.rule_name, options.rule_value)
 
 if options.operation=='rr':
     if options.topic is None:

@@ -54,7 +54,7 @@ if options.nocrypt:
 # azure = Azure(settings.AZURE_CONF)
 azure = Azure(settings.AZURE_CONF_2)
 
-resp = azure.send_message(msg, 'Message with group u_spud.', cryptkey, 'iamsig1', properties={'Group-Stem':'u_fox'})
+resp = azure.send_message(msg, 'Message with group u_spud.', cryptkey, 'iamsig1', properties={'Group-Stem':'u_spud'})
 print resp
 
 
