@@ -42,7 +42,7 @@ cryptkey = 'iamcrypt1'
 
 a = encode_message(msg, 'spud', cryptkey, sigkey)
 b = decode_message(a)
-print b
+print(b)
 
 
 

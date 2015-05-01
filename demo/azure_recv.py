@@ -59,14 +59,14 @@ def signal_handler(sig_num, frame):
 
 def msg_handler(message):
 
-   hdr = message[u'header']
-   print 'message received: type: ' + hdr[u'messageType']
-   print 'uuid: ' + hdr[u'messageId']
-   print 'sent: ' + hdr[u'timestamp']
-   print 'sender: ' + hdr[u'sender']
-   print 'contentType: ' + hdr[u'contentType']
-   print 'context: [%s]' % hdr[u'messageContext']
-   print 'message: [%s]' % message[u'body']
+   hdr = message['header']
+   print('message received: type: ' + hdr['messageType'])
+   print('uuid: ' + hdr['messageId'])
+   print('sent: ' + hdr['timestamp'])
+   print('sender: ' + hdr['sender'])
+   print('contentType: ' + hdr['contentType'])
+   print('context: [%s]' % hdr['messageContext'])
+   print('message: [%s]' % message['body'])
    return True
 
 #
@@ -115,5 +115,5 @@ nmsg = 0
 nmsg = azure.recv_and_process(msg_handler, max_messages)
 
 logger.info('Exiting')
-print '%d messages processed' %(nmsg)
+print('%d messages processed' %(nmsg))
 

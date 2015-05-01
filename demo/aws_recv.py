@@ -120,19 +120,19 @@ while still_alive:
       continue
     
    idle1 = idle5 = 0     
-   hdr = message[u'header']
-   print 'message received: type: ' + hdr[u'messageType']
-   print 'uuid: ' + hdr[u'messageId']
-   print 'sent: ' + hdr[u'timestamp']
-   print 'sender: ' + hdr[u'sender']
-   print 'contentType: ' + hdr[u'contentType']
-   print 'context: [%s]' % hdr[u'messageContext']
-   print 'message: [%s]' % message[u'body']
+   hdr = message['header']
+   print('message received: type: ' + hdr['messageType'])
+   print('uuid: ' + hdr['messageId'])
+   print('sent: ' + hdr['timestamp'])
+   print('sender: ' + hdr['sender'])
+   print('contentType: ' + hdr['contentType'])
+   print('context: [%s]' % hdr['messageContext'])
+   print('message: [%s]' % message['body'])
 
    nmsg += 1
    if nmsg==max_messages:
       break
 
 logger.info('Exiting')
-print '%d messages processed' %(nmsg)
+print('%d messages processed' %(nmsg))
 

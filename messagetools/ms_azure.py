@@ -25,7 +25,7 @@ from copy import deepcopy
 import logging
 import json
 
-from dao import Azure_DAO
+from .dao import Azure_DAO
 
 class Azure(object):
 

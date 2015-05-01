@@ -38,7 +38,7 @@ parser.add_option('-c', '--conf', action='store', type='string', dest='config', 
 options, args = parser.parse_args()
 
 if options.operation==None:
-    print 'operation must be entered'
+    print('operation must be entered')
     exit(1)
 
 crypt_init(settings.IAM_CONF)
@@ -47,15 +47,15 @@ logging.info("sws queue monitor starting.")
 
 aws = AWS(settings.AWS_CONF)
 if options.operation=='ct':
-    print 'creating topic: ' + options.topic
+    print('creating topic: ' + options.topic)
     aws.create_topic(options.topic)
 
 if options.operation=='cq':
-    print 'creating queue: ' + options.queue
+    print('creating queue: ' + options.queue)
     aws.create_queue(options.queue)
 
 if options.operation=='sq':
-    print 'subscribing queue: ' + options.queue + ' to topic ' + options.topic
+    print('subscribing queue: ' + options.queue + ' to topic ' + options.topic)
     aws.subscribe_queue(options.topic, options.queue)
 
 

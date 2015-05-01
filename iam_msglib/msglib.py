@@ -75,12 +75,12 @@ def log_message_and_exit(message):
 #
 def _build_sig_msg(header, txt):
   
-    sigmsg = header[u'contentType'] + '\n'
+    sigmsg = header['contentType'] + '\n'
     if 'keyId' in header:
-        sigmsg = sigmsg + header[u'iv'] + '\n' + header[u'keyId'] + '\n'
-    sigmsg = sigmsg + header[u'messageContext'] + '\n' + header[u'messageId'] + '\n' + \
-         header[u'messageType'] + '\n' + header[u'sender'] + '\n' + \
-         header[u'signingCertUrl'] + '\n' + header[u'timestamp'] + '\n' + header[u'version'] + '\n' + \
+        sigmsg = sigmsg + header['iv'] + '\n' + header['keyId'] + '\n'
+    sigmsg = sigmsg + header['messageContext'] + '\n' + header['messageId'] + '\n' + \
+         header['messageType'] + '\n' + header['sender'] + '\n' + \
+         header['signingCertUrl'] + '\n' + header['timestamp'] + '\n' + header['version'] + '\n' + \
          txt + '\n'
     return sigmsg
 
@@ -159,12 +159,12 @@ def iam_process_message(message):
 
     try:
       # check the version
-      if iamHeader[u'version'] != 'UWIT-1':
-          log(log_err, 'unknown version: ' + iamHeader[u'version'])
+      if iamHeader['version'] != 'UWIT-1':
+          log(log_err, 'unknown version: ' + iamHeader['version'])
           return None
 
       # the signing cert should be cached most of the time
-      certurl = iamHeader[u'signingCertUrl']
+      certurl = iamHeader['signingCertUrl']
       if not certurl in _public_keys:
           log(log_info, 'Fetching signing cert: ' + certurl)
           pem = ''
@@ -194,11 +194,11 @@ def iam_process_message(message):
           key = x509.get_pubkey()
           _public_keys[certurl] = key
 
-      enctxt64 = iam_message[u'body']
+      enctxt64 = iam_message['body']
 
       # check the signature
       sigmsg = _build_sig_msg(iamHeader, enctxt64)
-      sig = base64.b64decode(iamHeader[u'signature'])
+      sig = base64.b64decode(iamHeader['signature'])
       pubkey = _public_keys[certurl]
 
       pubkey.reset_context(md='sha1')
@@ -210,9 +210,9 @@ def iam_process_message(message):
 
       # decrypt the message
       if 'keyId' in iamHeader:
-          iv64 = iamHeader[u'iv']
+          iv64 = iamHeader['iv']
           iv = base64.b64decode(iv64)
-          keyid = iamHeader[u'keyId']
+          keyid = iamHeader['keyId']
           if not keyid in _crypt_keys:
               log(log_err, 'key ' + keyid + ' not found')
               log_message_and_exit(sqsstr)  # can't go on
@@ -224,11 +224,11 @@ def iam_process_message(message):
       else:
           txt = base64.b64decode(enctxt64)
 
-      txt = filter(lambda x: x in string.printable, txt)
-      iam_message[u'body'] = txt
+      txt = [x for x in txt if x in string.printable]
+      iam_message['body'] = txt
       # un-base64 the context
       try:
-          iamHeader[u'messageContext'] = base64.b64decode(iamHeader[u'messageContext'])
+          iamHeader['messageContext'] = base64.b64decode(iamHeader['messageContext'])
       except TypeError:
           log(log_info,  'context not base64')
           return None

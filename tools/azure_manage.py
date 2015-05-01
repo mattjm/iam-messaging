@@ -36,7 +36,7 @@ parser.add_option('', '--rule-value', action='store', dest='rule_value', help='t
 options, args = parser.parse_args()
 
 if options.operation==None:
-    print 'operation must be entered'
+    print('operation must be entered')
     exit(1)
 
 logger = logging.getLogger()
@@ -79,7 +79,7 @@ if options.operation=='ar':
     logger.info("add rule: namespace='%s', topic='%s', subscription='%s', name='%s', value='%s'" %
         (conf['NAMESPACE'], options.topic, options.subscription, options.rule_name, options.rule_value))
     v = 'Group-Stem=\'"u_fox"\''
-    print 'v[%s]'%v
+    print('v[%s]'%v)
     azure.add_rule(options.topic, options.subscription, options.rule_name, v)
 
 if options.operation=='rr':
