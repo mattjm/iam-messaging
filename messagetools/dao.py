@@ -12,6 +12,11 @@ class DAO_BASE(object):
              
     def __init__(self, conf):
         self._conf = conf
+        if 'RUN_MODE' in conf:
+            self._run_mode = conf['RUN_MODE']
+        else:
+            import settings
+            self._run_mode = settings.RUN_MODE
 
     def _create_topic(self, name):
         dao = self._getDAO()
@@ -71,7 +76,7 @@ class AWS_DAO(DAO_BASE):
         return self._subscribe_queue(topic_name, queue_name)
 
     def _getDAO(self):
-        if settings.RUN_MODE=='Live':
+        if self._run_mode=='Live':
             return AWSLive(self._conf)
         return AWSFile(self._conf)
 
@@ -113,7 +118,7 @@ class Azure_DAO(DAO_BASE):
         return response
 
     def _getDAO(self):
-        if settings.RUN_MODE=='Live':
+        if self._run_mode=='Live':
             return AzureLive(self._conf)
         return AzureFile(self._conf)
 

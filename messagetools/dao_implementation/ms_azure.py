@@ -43,7 +43,7 @@ class File(object):
         self._event_no = 0
 
     def recv_message(self):
-        message = get_mockdata_message('ms_azure', self._conf['SQS_QUEUE'], self._event_no)
+        message = get_mockdata_message('ms_azure', self._conf, self._event_no)
         self._event_no += 1
         return message
     
@@ -53,7 +53,7 @@ class File(object):
 
         logger.debug('recv and proc: no=%d, max=%d' % (self._event_no, max))
         for n in range(0,max):
-           message = get_mockdata_message('ms_azure', self._conf['SQS_QUEUE'], self._event_no)
+           message = get_mockdata_message('ms_azure', self._conf, self._event_no)
          
            if message==None: 
                break
@@ -107,19 +107,28 @@ class Live(object):
     
     def recv_and_process(self, handler, max=1):
         bus_service = self._get_bus_service()
-        ms_msg = bus_service.receive_subscription_message(self._topic, self._subscr, peek_lock=True)
-        dmsg = decode_message(ms_msg.body)
-        if dmsg is None:
-            print 'removing invalid message'
-            ms_msg.delete()
-            return 1
-        ret = handler(decode_message(ms_msg.body))
-        if ret:
-            print 'deleting'
-            ms_msg.delete()
-        else:
-            ms_msg.unlock()
-        return 1
+        nm = 0
+        for m in range(0,max):
+            print 'receive_subscription_message: call'
+            ms_msg = bus_service.receive_subscription_message(self._topic, self._subscr, peek_lock=True, timeout='3')
+            print 'receive_subscription_message: return'
+            if ms_msg is None:
+                print 'no more messages'
+                return nm
+            nm += 1
+            dmsg = decode_message(ms_msg.body)
+            if dmsg is None:
+                print 'removing invalid message'
+                ms_msg.delete()
+                continue
+            ret = handler(decode_message(ms_msg.body))
+            if ret:
+                print 'deleting'
+                ms_msg.delete()
+                print 'deleted'
+            else:
+                ms_msg.unlock()
+        return nm
 
     def add_rule(self, topic_name, subscription_name, rule_name, rule_value):
         bus_service = self._get_bus_service()

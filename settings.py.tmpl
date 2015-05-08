@@ -6,8 +6,10 @@ DEBUG = False
 
 RUN_MODE = 'Live'
 RUN_MODE = 'File'
+MOCK_ROOT = None
 
-RESTTOOLS_CA_BUNDLE = '/home/fox/certs/uw-incommon-ca.crt'
+CA_BUNDLE = '/home/fox/certs/uw-incommon-ca.crt'
+
 
 AWS_CONF = {
     'SNS_HOST':  'xxxx',
@@ -28,6 +30,14 @@ AZURE_CONF = {
     'TOPIC_NAME':  'xxxx',
     'SUBSCRIPTION_NAME': 'xxxx',
 }
+
+# augment handlers' configs
+for conf in (AWS_CONF, AZURE_CONF):
+    if 'RUN_MODE' not in conf:
+        conf['RUN_MODE'] = RUN_MODE
+    if 'MOCK_ROOT' not in conf:
+        conf['MOCK_ROOT'] = MOCK_ROOT
+
 
 IAM_CONF = {
     'CERTS':  [

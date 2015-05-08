@@ -108,11 +108,11 @@ signal.signal(signal.SIGUSR1, signal_handler)
 idle1 = 0  # 1 minute counter
 idle5 = 0  # 5 minute counter
 
-azure = Azure(settings.AZURE_CONF_2)
+azure = Azure(settings.AZURE_CONF)
 
 nmsg = 0
 
-nmsg = azure.recv_and_process(msg_handler, max_messages)
+nmsg = azure.recv_and_process(msg_handler, max=max_messages)
 
 logger.info('Exiting')
 print '%d messages processed' %(nmsg)

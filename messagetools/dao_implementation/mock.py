@@ -5,9 +5,7 @@ import re
 import json
 import logging
 import time
-import socket
-import settings
-# from messagetools.mock.mock_http import MockHTTP
+import string
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +15,7 @@ A centralized the mock data access
 fs_encoding = sys.getfilesystemencoding() or sys.getdefaultencoding()
 
 
-def get_mockdata_message(service_name, queue_name, event_no):
+def get_mockdata_message(service_name, conf, event_no):
     """
     :param service_name:
         possible "aws", "azure", etc.
@@ -29,23 +27,22 @@ def get_mockdata_message(service_name, queue_name, event_no):
 
     dir_base = dirname(__file__)
     app_root = abspath(dir_base)
-    response = _load_resource_from_path(app_root, service_name, queue_name, event_no)
+    response = _load_resource_from_path(app_root, service_name, conf, event_no)
     if response:
         return response
 
     # If no event has been found return None
     return response
 
-def _load_resource_from_path(app_root, service_name, queue_name, event_no):
+def _load_resource_from_path(app_root, service_name, conf, event_no):
 
+    queue_name = conf['SQS_QUEUE']
     mock_root = app_root + '/../mock' 
     std_root = mock_root
-    if hasattr(settings, 'MESSAGETOOLS_MOCK_ROOT'):
-        mock_root = settings.MESSAGETOOLS_MOCK_ROOT
+    if 'MOCK_ROOT' in conf and conf['MOCK_ROOT'] is not None:
+        mock_root = conf['MOCK_ROOT']
     root = mock_root
     fname = 'event'
-    if hasattr(settings, 'MESSAGETOOLS_MOCK_FILENAME'):
-        fname = settings.MESSAGETOOLS_MOCK_FILENAME
     fpath = '/' + service_name + '/' + queue_name + '/' + fname + '.' + str(event_no)
 
     try:
@@ -53,15 +50,18 @@ def _load_resource_from_path(app_root, service_name, queue_name, event_no):
         logger.info('mock file: ' + file_path)
         handle = open(file_path)
     except IOError:
-        try:
-            file_path = convert_to_platform_safe(std_root + fpath)
-            logger.info('mock file: ' + file_path)
-            handle = open(file_path)
-        except IOError:
-            return
+        if std_root is not mock_root:
+            try:
+                file_path = convert_to_platform_safe(std_root + fpath)
+                logger.info('mock file: ' + file_path)
+                handle = open(file_path)
+            except IOError:
+                return
 
     data = handle.read()
-    logger.debug('data[%s]' % data)
+    cut = string.find(data,'MOCKDATA-MOCKDATA-MOCKDATA')
+    if cut>=0:
+        data = data[string.find(data, '\n', cut)+1:]
     response = json.loads(data)
     return response
 

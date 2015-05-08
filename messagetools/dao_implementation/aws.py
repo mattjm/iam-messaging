@@ -52,7 +52,7 @@ class File(object):
         self._event_no = 0
 
     def recv_message(self):
-        message = get_mockdata_message('aws', self._conf['SQS_QUEUE'], self._event_no)
+        message = get_mockdata_message('aws', self._conf, self._event_no)
         self._event_no += 1
         return message
     
@@ -62,7 +62,7 @@ class File(object):
 
         logger.debug('recv and proc: no=%d, max=%d' % (self._event_no, max))
         for n in range(0,max):
-           message = get_mockdata_message('aws', self._conf['SQS_QUEUE'], self._event_no)
+           message = get_mockdata_message('aws', self._conf, self._event_no)
          
            if message==None: 
                break
