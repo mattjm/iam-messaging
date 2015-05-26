@@ -159,6 +159,8 @@ class Live(object):
         sns_connection.subscribe_sqs_queue(arn, queue)
 
 
-
-    
+    def purge_queue(self, queue_name):
+        sqs_queue = self.get_queue()
+        sqs_queue.purge()
+        return
 

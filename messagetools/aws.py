@@ -69,5 +69,10 @@ class AWS(object):
         dao = AWS_DAO(self._conf)
         response = dao.subscribe_queue(topic_name, queue_name)
         return response
+    
+    def purge_queue(self, queue_name):
+        dao = AWS_DAO(self._conf)
+        dao.purge_queue(queue_name)
+        return
 
 
