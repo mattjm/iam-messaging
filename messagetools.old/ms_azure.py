@@ -16,7 +16,7 @@
 #
 
 #
-# IAM messaging tools - AWS interface
+# IAM messaging tools - Azure interface
 #
 
 from sys import exit
@@ -25,53 +25,50 @@ from copy import deepcopy
 import logging
 import json
 
-from .dao import AWS_DAO
+from .dao import Azure_DAO
 
-class AWS(object):
+class Azure(object):
 
+    # conf is an object 
     def __init__(self, conf):
         self._conf = conf
         
-    # SNS actions
+    # Topic actions
 
     def create_topic(self, name):
-        dao = AWS_DAO(self._conf)
+        dao = Azure_DAO(self._conf)
         response = dao.create_topic(name)
         return response
 
-    def send_message(self, msg, context, cryptid, signid):
-        dao = AWS_DAO(self._conf)
-        response = dao.send_message(msg, context, cryptid, signid)
+    def send_message(self, msg, context, cryptid, signid, properties={}):
+        dao = Azure_DAO(self._conf)
+        response = dao.send_message(msg, context, cryptid, signid, properties)
         return response
 
 
-    # SQS actions
+    # Subscription actions
 
-    def create_queue(self, name):
-        dao = AWS_DAO(self._conf)
-        response = dao.create_queue(name)
+    def create_subscription(self, topic_name, name):
+        dao = Azure_DAO(self._conf)
+        response = dao.create_subscription(topic_name, name)
         return response
 
-    def recv_message(self):
-        dao = AWS_DAO(self._conf)
-        response = dao.recv_message()
+    def recv_message(self, peek=False):
+        dao = Azure_DAO(self._conf)
+        response = dao.recv_message(peek)
         return response
 
     def recv_and_process(self, handler, max=1):
-        dao = AWS_DAO(self._conf)
+        dao = Azure_DAO(self._conf)
         response = dao.recv_and_process(handler, max)
         return response
-        
-    def purge_queue(self):
-        dao = AWS_DAO(self._conf)
-        response = dao.purge_queue()
+
+    def add_rule(self, topic_name, subscription_name, rule_name, rule_value):
+        dao = Azure_DAO(self._conf)
+        response = dao.add_rule(topic_name, subscription_name, rule_name, rule_value)
         return response
 
-    # multi-actions
-
-    def subscribe_queue(self, topic_name, queue_name):
-        dao = AWS_DAO(self._conf)
-        response = dao.subscribe_queue(topic_name, queue_name)
+    def remove_rule(self, topic_name, subscription_name, rule_name):
+        dao = Azure_DAO(self._conf)
+        response = dao.remove_rule(topic_name, subscription_name, rule_name)
         return response
-
-

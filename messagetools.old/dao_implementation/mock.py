@@ -6,7 +6,7 @@ import json
 import logging
 import time
 import socket
-import WdEventSettings
+import settings
 # from messagetools.mock.mock_http import MockHTTP
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ def get_mockdata_message(service_name, queue_name, event_no):
     :param service_name:
         possible "aws", "azure", etc.
     """
-    
+
     file_path = None
     success = False
     start_time = time.time()
@@ -30,7 +30,6 @@ def get_mockdata_message(service_name, queue_name, event_no):
     dir_base = dirname(__file__)
     app_root = abspath(dir_base)
     response = _load_resource_from_path(app_root, service_name, queue_name, event_no)
-    print(response)
     if response:
         return response
 
@@ -41,12 +40,12 @@ def _load_resource_from_path(app_root, service_name, queue_name, event_no):
 
     mock_root = app_root + '/../mock' 
     std_root = mock_root
-    if hasattr(WdEventSettings, 'MESSAGETOOLS_MOCK_ROOT'):
-        mock_root = WdEventSettings.MESSAGETOOLS_MOCK_ROOT
+    if hasattr(settings, 'MESSAGETOOLS_MOCK_ROOT'):
+        mock_root = settings.MESSAGETOOLS_MOCK_ROOT
     root = mock_root
     fname = 'event'
-    if hasattr(WdEventSettings, 'MESSAGETOOLS_MOCK_FILENAME'):
-        fname = WdEventSettings.MESSAGETOOLS_MOCK_FILENAME
+    if hasattr(settings, 'MESSAGETOOLS_MOCK_FILENAME'):
+        fname = settings.MESSAGETOOLS_MOCK_FILENAME
     fpath = '/' + service_name + '/' + queue_name + '/' + fname + '.' + str(event_no)
 
     try:

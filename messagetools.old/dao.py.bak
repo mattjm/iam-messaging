@@ -1,6 +1,6 @@
 # iam-messaging implementation for non-django applications
 
-import WdEventSettings
+import settings 
 
 # from messagetools.mock.mock_http import MockHTTP
 from messagetools.dao_implementation.aws import File as AWSFile
@@ -47,11 +47,8 @@ class DAO_BASE(object):
         dao = self._getDAO()
         response = dao.subscribe_queue(topic_name, queue_name)
         return response
-    
-    def _purge_queue(self):
-        dao = self._getDAO()
-        response = dao.purge_queue()
-        return response
+
+
 
 class AWS_DAO(DAO_BASE):
 
@@ -72,12 +69,9 @@ class AWS_DAO(DAO_BASE):
 
     def subscribe_queue(self, topic_name, queue_name):
         return self._subscribe_queue(topic_name, queue_name)
-		
-    def purge_queue(self):
-        return self._purge_queue()
 
     def _getDAO(self):
-        if WdEventSettings.RUN_MODE=='Live':
+        if settings.RUN_MODE=='Live':
             return AWSLive(self._conf)
         return AWSFile(self._conf)
 

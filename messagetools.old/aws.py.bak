@@ -25,7 +25,7 @@ from copy import deepcopy
 import logging
 import json
 
-from .dao import AWS_DAO
+from dao import AWS_DAO
 
 class AWS(object):
 
@@ -62,10 +62,6 @@ class AWS(object):
         response = dao.recv_and_process(handler, max)
         return response
         
-    def purge_queue(self):
-        dao = AWS_DAO(self._conf)
-        response = dao.purge_queue()
-        return response
 
     # multi-actions
 

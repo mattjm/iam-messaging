@@ -62,10 +62,7 @@ class AWS(object):
         response = dao.recv_and_process(handler, max)
         return response
         
-    def purge_queue(self):
-        dao = AWS_DAO(self._conf)
-        response = dao.purge_queue()
-        return response
+    
 
     # multi-actions
 
@@ -73,5 +70,7 @@ class AWS(object):
         dao = AWS_DAO(self._conf)
         response = dao.subscribe_queue(topic_name, queue_name)
         return response
+    
+   
 
 

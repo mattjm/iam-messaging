@@ -21,15 +21,8 @@
 # 
 
 # crypto class covers for openssl
-#import M2Crypto
-#from M2Crypto import BIO, RSA, EVP, X509
-from cryptography import fernet
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.backends.openssl import backend
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from abc import ABCMeta, abstractmethod
+import M2Crypto
+from M2Crypto import BIO, RSA, EVP, X509
 
 import json
 import uuid
@@ -44,15 +37,13 @@ from sys import exit
 import signal
 import importlib
 
-
 import urllib3
 
 import threading
 
-from .exceptions import SignatureVerifyException
-from .exceptions import CryptKeyException
-from .exceptions import SigningCertException
-
+from exceptions import SignatureVerifyException
+from exceptions import CryptKeyException
+from exceptions import SigningCertException
 
 # ----- global vars (to this module) ------------------
 
@@ -79,12 +70,12 @@ logger = logging.getLogger(__name__)
 # accumulate header fields for signature
 #
 def _build_sig_msg(header, txt):
-    sigmsg = header['contentType'] + '\n'
+    sigmsg = header[u'contentType'] + '\n'
     if 'keyId' in header:
-        sigmsg = sigmsg + header['iv'] + '\n' + header['keyId'] + '\n'
-    sigmsg = sigmsg + header['messageContext'] + '\n' + header['messageId'] + '\n' + \
-         header['messageType'] + '\n' + header['sender'] + '\n' + \
-         header['signingCertUrl'] + '\n' + header['timestamp'] + '\n' + header['version'] + '\n' + \
+        sigmsg = sigmsg + header[u'iv'] + '\n' + header[u'keyId'] + '\n'
+    sigmsg = sigmsg + header[u'messageContext'] + '\n' + header[u'messageId'] + '\n' + \
+         header[u'messageType'] + '\n' + header[u'sender'] + '\n' + \
+         header[u'signingCertUrl'] + '\n' + header[u'timestamp'] + '\n' + header[u'version'] + '\n' + \
          txt + '\n'
     return sigmsg.encode('ascii')
 
@@ -110,16 +101,14 @@ def encode_message(msg, context, cryptid, signid):
         raise SigningCertException(keyid=signid, msg='not found')
     iamHeader['signingCertUrl'] = _private_keys[signid]['url']
 
-    if cryptid != None:
+    if cryptid!=None:
         if cryptid not in _crypt_keys:
             raise CryptKeyException(keyid=cryptid, msg='not found')
         iamHeader['keyId'] = cryptid
         iv = os.urandom(16)
         iamHeader['iv'] = base64.b64encode(iv)
-        #cipher = M2Crypto.EVP.Cipher(alg='aes_128_cbc', key=_crypt_keys[cryptid], iv=iv, op=1)
-        f = Fernet(_crypt_keys[cryptid])
-        #txt = cipher.update(msg) + cipher.final()
-        txt = f.encrypt(msg)
+        cipher = M2Crypto.EVP.Cipher(alg='aes_128_cbc', key=_crypt_keys[cryptid], iv=iv, op=1)
+        txt = cipher.update(msg) + cipher.final()
         enctxt64 = base64.b64encode(txt)
     else:
         enctxt64 = base64.b64encode(msg)
@@ -154,12 +143,10 @@ def decode_message(b64msg):
     global _public_keys 
     global _ca_file 
 
-    #python 3 fix--no implicit conversion from bytes to string and json.loads will break
-       
-    msgstr = base64.b64decode(b64msg).decode('utf8','ignore')
-    
+    # get the iam message
+    msgstr = base64.b64decode(b64msg).encode('utf8','ignore')
     iam_message = json.loads(msgstr)
-    
+
 
     if 'header' not in iam_message: 
         logging.info('not an iam message')
@@ -168,12 +155,12 @@ def decode_message(b64msg):
 
     try:
       # check the version
-      if iamHeader['version'] != 'UWIT-1':
-          logging.error('unknown version: ' + iamHeader['version'])
+      if iamHeader[u'version'] != 'UWIT-1':
+          logging.error('unknown version: ' + iamHeader[u'version'])
           return None
 
       # the signing cert should be cached most of the time
-      certurl = iamHeader['signingCertUrl']
+      certurl = iamHeader[u'signingCertUrl']
       if not certurl in _public_keys:
           logging.info('Fetching signing cert: ' + certurl)
           pem = ''
@@ -185,8 +172,8 @@ def decode_message(b64msg):
           elif certurl.startswith('http'):
               if _ca_file != None:
                   http = urllib3.PoolManager(
-                      cert_reqs='CERT_REQUIRED',  # Force certificate check.
-                      ca_certs=_ca_file,
+                      cert_reqs='CERT_REQUIRED', # Force certificate check.
+                      ca_certs=_ca_file,  
                   )
               else:
                   http = urllib3.PoolManager()
@@ -199,73 +186,56 @@ def decode_message(b64msg):
           else:
               raise SigningCertException(url=certurl, status=-1)
 
-          #x509 = X509.load_cert_string(pem)
-          x509Cert = x509.load_pem_x509_certificate(pem, default_backend())
-          #key = x509.get_pubkey()
-          key = x509Cert.public_key()
-          
+          x509 = X509.load_cert_string(pem)
+          key = x509.get_pubkey()
           _public_keys[certurl] = key
 
-      enctxt64 = iam_message['body']
-    
+      enctxt64 = iam_message[u'body']
+
       # check the signature
 
       sigmsg = _build_sig_msg(iamHeader, enctxt64)
-      sig = base64.b64decode(iamHeader['signature'])
+      sig = base64.b64decode(iamHeader[u'signature'])
       pubkey = _public_keys[certurl]
-      verifier = pubkey.verifier(sig,
-                                 padding.PKCS1v15(),
-                                 hashes.SHA1())
-      verifier.update(sigmsg)
-      verifier.verify() #If the signature does not match, verify() will raise an InvalidSignature exception.
-      
-      
-      #pubkey.reset_context(md='sha1')
-      #pubkey.verify_init()
-      #pubkey.verify_update(sigmsg)
-      #if pubkey.verify_final(sig) != 1:
-          #raise SignatureVerifyException()
+      pubkey.reset_context(md='sha1')
+      pubkey.verify_init()
+      pubkey.verify_update(sigmsg)
+      if pubkey.verify_final(sig)!=1:
+          raise SignatureVerifyException()
 
       # decrypt the message
       if 'keyId' in iamHeader:
-          iv64 = iamHeader['iv']
+          iv64 = iamHeader[u'iv']
           iv = base64.b64decode(iv64)
-          keyid = iamHeader['keyId']
+          keyid = iamHeader[u'keyId']
           if not keyid in _crypt_keys:
               logger.error('key ' + keyid + ' not found')
               raise CryptKeyException(keyid=keyid, msg='not found')
           key = _crypt_keys[keyid]
  
-          enctxt = base64.b64decode(enctxt64)
-          #cipher = M2Crypto.EVP.Cipher(alg='aes_128_cbc', key=key, iv=iv, op=0)
-          f =  Fernet(key)
-          #txt = cipher.update(enctxt) + cipher.final()
-          txt = f.decrypt(enctxt)
+          enctxt =  base64.b64decode(enctxt64)
+          cipher = M2Crypto.EVP.Cipher(alg='aes_128_cbc', key=key, iv=iv, op=0)
+          txt = cipher.update(enctxt) + cipher.final()
       else:
-          #python3 fix
-          txt = base64.b64decode(enctxt64).decode('utf-8')
-      
-      #python 3 conversion script changed this to a list comprehension which needed additional tweaks
-      txt = ''.join([x for x in txt if x in string.printable])
-      
-      iam_message['body'] = txt
+          txt = base64.b64decode(enctxt64)
+
+      txt = filter(lambda x: x in string.printable, txt)
+      iam_message[u'body'] = txt
       # un-base64 the context
       try:
-          #python3 fix
-          iamHeader['messageContext'] = base64.b64decode(iamHeader['messageContext']).decode('utf-8')
+          iamHeader[u'messageContext'] = base64.b64decode(iamHeader[u'messageContext'])
       except TypeError:
-          logger.info('context not base64')
+          logger.info( 'context not base64')
           return None
     except KeyError:
         if 'AlarmName' in iam_message:
             logger.debug('alarm: ' + iam_message['AlarmName'])
             return iam_message
 
-        logger.error('Unknown message key: ')
+        logger.error('Unknown message key: ' )
         return None
-    
-    return iam_message
 
+    return iam_message
 
 
 def crypt_init(cfg):
@@ -279,10 +249,7 @@ def crypt_init(cfg):
         id = c['ID']
         crt = {}
         crt['url'] = c['URL']
-        #crt['key'] = EVP.load_key(c['KEYFILE'])
-        file = open(c['KEYFILE'], 'rb')
-        keyBytes = file.read()
-        crt['key'] = backend.load_pem_private_key(data=keyBytes, password=None)
+        crt['key'] = EVP.load_key(c['KEYFILE'])
         _private_keys[id] = crt
 
 
