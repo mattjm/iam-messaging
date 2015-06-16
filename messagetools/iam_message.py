@@ -33,7 +33,7 @@ import string
 import time
 import re
 import os.path
-from sys import exit
+import sys
 import signal
 import importlib
 
@@ -60,7 +60,7 @@ _private_keys = {}
 _ca_file = None
 
 import logging
-logger = logging.getLogger(__name__)
+logger = None
 
 #
 # -------------------------------------
@@ -149,20 +149,20 @@ def decode_message(b64msg):
 
 
     if 'header' not in iam_message: 
-        logging.info('not an iam message')
+        logger.info('not an iam message')
         return None
     iamHeader = iam_message['header']
 
     try:
       # check the version
       if iamHeader[u'version'] != 'UWIT-1':
-          logging.error('unknown version: ' + iamHeader[u'version'])
+          logger.error('unknown version: ' + iamHeader[u'version'])
           return None
 
       # the signing cert should be cached most of the time
       certurl = iamHeader[u'signingCertUrl']
       if not certurl in _public_keys:
-          logging.info('Fetching signing cert: ' + certurl)
+          logger.info('Fetching signing cert: ' + certurl)
           pem = ''
 
           if certurl.startswith('file:'):
@@ -242,6 +242,9 @@ def crypt_init(cfg):
     global _crypt_keys
     global _public_keys
     global _ca_file
+    global logger
+
+    logger = logging.getLogger(__name__)
 
     # load the signing keys
     certs = cfg['CERTS']
@@ -263,6 +266,10 @@ def crypt_init(cfg):
         _crypt_keys[id] = kbin
 
     # are we verifying certs ( just for the signing cert )
-    if 'ca_file' in cfg:
+    if 'CA_FILE' in cfg:
         _ca_file = cfg['CA_FILE']
         
+    # skip ssl warning for older pythons
+    if sys.hexversion < 0x02070900:
+        logger.info('Ignoring urllib3 ssl security warning: https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning')
+        urllib3.disable_warnings()
