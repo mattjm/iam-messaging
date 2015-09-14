@@ -144,7 +144,11 @@ def decode_message(b64msg):
     global _ca_file 
 
     # get the iam message
-    msgstr = base64.b64decode(b64msg).encode('utf8','ignore')
+    try:
+        msgstr = base64.b64decode(b64msg).encode('utf8','ignore')
+    except TypeError:
+        logger.info( 'Not an IAM message: not base64')
+        return None
     iam_message = json.loads(msgstr)
 
 

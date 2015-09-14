@@ -59,6 +59,7 @@ class File(object):
     def recv_and_process(self, handler, max=1):
         ntot = 0
         nvalid = 0
+        logger = logging.getLogger(__name__)
 
         logger.debug('recv and proc: no=%d, max=%d' % (self._event_no, max))
         for n in range(0,max):
@@ -86,6 +87,11 @@ class Live(object):
         sns_connection.publish(self._conf['SNS_ARN'], b64msg, 'iam-message')
 
 
+    def get_all_queues(self):
+        sqs_connection = boto.connect_sqs(aws_access_key_id=self._conf['SQS_KEYID'], aws_secret_access_key=self._conf['SQS_KEY'])
+        queues = sqs_connection.get_all_queues()
+        return queues
+       
     def get_queue(self):
     
         sqs_connection = boto.connect_sqs(aws_access_key_id=self._conf['SQS_KEYID'], aws_secret_access_key=self._conf['SQS_KEY'])

@@ -18,6 +18,16 @@ class DAO_BASE(object):
             import settings
             self._run_mode = settings.RUN_MODE
 
+    def _get_queue(self):
+        dao = self._getDAO()
+        response = dao.get_queue()
+        return response
+
+    def _get_all_queues(self):
+        dao = self._getDAO()
+        response = dao.get_all_queues()
+        return response
+
     def _create_topic(self, name):
         dao = self._getDAO()
         response = dao.create_topic(name)
@@ -62,6 +72,12 @@ class AWS_DAO(DAO_BASE):
 
     def send_message(self, msg, context, cryptid, signid):
         return self._send_message(msg, context, cryptid, signid)
+
+    def get_queue(self):
+        return self._get_queue()
+
+    def get_all_queues(self):
+        return self._get_all_queues()
 
     def create_queue(self, name):
         return self._create_queue(name)
