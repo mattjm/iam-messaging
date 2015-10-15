@@ -5,8 +5,10 @@ import settings
 # from messagetools.mock.mock_http import MockHTTP
 from messagetools.dao_implementation.aws import File as AWSFile
 from messagetools.dao_implementation.aws import Live as AWSLive
-from messagetools.dao_implementation.ms_azure import File as AzureFile
-from messagetools.dao_implementation.ms_azure import Live as AzureLive
+
+# remove azure until fixed
+# from messagetools.dao_implementation.ms_azure import File as AzureFile
+# from messagetools.dao_implementation.ms_azure import Live as AzureLive
 
 class DAO_BASE(object):
              
@@ -133,10 +135,10 @@ class Azure_DAO(DAO_BASE):
         response = dao.remove_rule(topic_name, subscription_name, rule_name)
         return response
 
-    def _getDAO(self):
-        if self._run_mode=='Live':
-            return AzureLive(self._conf)
-        return AzureFile(self._conf)
+#    def _getDAO(self):
+#        if self._run_mode=='Live':
+#            return AzureLive(self._conf)
+#        return AzureFile(self._conf)
 
 
 
