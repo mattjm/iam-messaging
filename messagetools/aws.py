@@ -47,6 +47,16 @@ class AWS(object):
 
     # SQS actions
 
+    def get_queue(self):
+        dao = AWS_DAO(self._conf)
+        response = dao.get_queue()
+        return response
+
+    def get_all_queues(self):
+        dao = AWS_DAO(self._conf)
+        response = dao.get_all_queues()
+        return response
+
     def create_queue(self, name):
         dao = AWS_DAO(self._conf)
         response = dao.create_queue(name)

@@ -30,7 +30,8 @@ import settings
 # load configuration
 
 parser = OptionParser()
-parser.add_option('-o', '--operation', action='store', type='string', dest='operation', help='cq, ct, sq')
+parser.add_option('-o', '--operation', action='store', type='string', dest='operation', 
+  help='cq:create_queue, ct:create_topic, sq:subscribe_queue, lq:list_queue(s) ')
 parser.add_option('-t', '--topic', action='store', type='string', dest='topic', help='topic')
 parser.add_option('-q', '--queue', action='store', type='string', dest='queue', help='queue')
 parser.add_option('-v', '--verbose', action='store_true', dest='verbose', help='?')
@@ -46,6 +47,17 @@ crypt_init(settings.IAM_CONF)
 logging.info("sws queue monitor starting.")
 
 aws = AWS(settings.AWS_CONF)
+
+
+
+if options.operation=='lqs':
+    print 'list queues '
+    queues = aws.get_all_queues()
+    for q in queues:
+        print q.arn
+        if options.verbose:
+            print q.get_attributes
+
 if options.operation=='ct':
     print('creating topic: ' + options.topic)
     aws.create_topic(options.topic)

@@ -73,7 +73,7 @@ parser.add_option('-m', '--max_messages', action='store', type='int', dest='maxm
 parser.add_option('', '--count', action='store_true', dest='count_only', help='just count the messages onthe queue', default=False)
 options, args = parser.parse_args()
 
-max_messages = 0
+max_messages = 10
 if options.maxmsg: max_messages = options.maxmsg
 
 logging.config.dictConfig(settings.LOGGING)
@@ -106,6 +106,7 @@ nmsg = 0
 while still_alive:
 
    message = aws.recv_message()
+   print message
    if message==None: 
       sleep_sec = 1800
       if idle5>0:

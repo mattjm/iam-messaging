@@ -40,7 +40,7 @@ import string
 import time
 import re
 import os.path
-from sys import exit
+import sys
 import signal
 import importlib
 
@@ -69,7 +69,7 @@ _private_keys = {}
 _ca_file = None
 
 import logging
-logger = logging.getLogger(__name__)
+logger = None
 
 #
 # -------------------------------------
@@ -155,21 +155,25 @@ def decode_message(b64msg):
     global _ca_file 
 
     #python 3 fix--no implicit conversion from bytes to string and json.loads will break
-       
-    msgstr = base64.b64decode(b64msg).decode('utf8','ignore')
-    
+    # get the iam message
+    try:
+        msgstr = base64.b64decode(b64msg).encode('utf8','ignore')
+    except TypeError:
+        logger.info( 'Not an IAM message: not base64')
+        return None
     iam_message = json.loads(msgstr)
     
 
     if 'header' not in iam_message: 
-        logging.info('not an iam message')
+
+        logger.info('not an iam message')
         return None
     iamHeader = iam_message['header']
 
     try:
       # check the version
-      if iamHeader['version'] != 'UWIT-1':
-          logging.error('unknown version: ' + iamHeader['version'])
+      if iamHeader[u'version'] != 'UWIT-1':
+          logger.error('unknown version: ' + iamHeader[u'version'])
           return None
 
       # the signing cert should be cached most of the time
@@ -183,13 +187,7 @@ def decode_message(b64msg):
                   pem = f.read()
 
           elif certurl.startswith('http'):
-              if _ca_file != None:
-                  http = urllib3.PoolManager(
-                      cert_reqs='CERT_REQUIRED',  # Force certificate check.
-                      ca_certs=_ca_file,
-                  )
-              else:
-                  http = urllib3.PoolManager()
+              http = urllib3.PoolManager()
               certdoc = http.request('GET', certurl)
               if certdoc.status != 200:
                   logger.error('sws cert get failed: ' + certdoc.status)
@@ -211,6 +209,7 @@ def decode_message(b64msg):
       # check the signature
 
       sigmsg = _build_sig_msg(iamHeader, enctxt64)
+
       sig = base64.b64decode(iamHeader['signature'])
       pubkey = _public_keys[certurl]
       verifier = pubkey.verifier(sig,
@@ -228,8 +227,10 @@ def decode_message(b64msg):
 
       # decrypt the message
       if 'keyId' in iamHeader:
+
           iv64 = iamHeader['iv']
           iv = base64.b64decode(iv64)
+
           keyid = iamHeader['keyId']
           if not keyid in _crypt_keys:
               logger.error('key ' + keyid + ' not found')
@@ -254,12 +255,14 @@ def decode_message(b64msg):
           #python3 fix
           iamHeader['messageContext'] = base64.b64decode(iamHeader['messageContext']).decode('utf-8')
       except TypeError:
+
           logger.info('context not base64')
           return None
     except KeyError:
         if 'AlarmName' in iam_message:
             logger.debug('alarm: ' + iam_message['AlarmName'])
             return iam_message
+
 
         logger.error('Unknown message key: ')
         return None
@@ -272,6 +275,9 @@ def crypt_init(cfg):
     global _crypt_keys
     global _public_keys
     global _ca_file
+    global logger
+
+    logger = logging.getLogger(__name__)
 
     # load the signing keys
     certs = cfg['CERTS']
@@ -299,3 +305,7 @@ def crypt_init(cfg):
     if 'ca_file' in cfg:
         _ca_file = cfg['CA_FILE']
         
+    # skip ssl warning for older pythons
+    if sys.hexversion < 0x02070900:
+        logger.info('Ignoring urllib3 ssl security warning: https://urllib3.readthedocs.org/en/latest/security.html#insecureplatformwarning')
+        urllib3.disable_warnings()

@@ -35,14 +35,33 @@ logger.info("sig tester starting.")
 
 crypt_init(settings.IAM_CONF)
 
+# msg = 'Hello, world, from sigtest.py!\nAnother line.'
 msg = 'Hello, world, from py.'
 
-sigkey = 'iamsig11'
+sigkey = 'iamsig1'
 cryptkey = 'iamcrypt1'
 
+# saving to a file allow easier intra-language verifications
+
 a = encode_message(msg, 'spud', cryptkey, sigkey)
-b = decode_message(a)
 print(b)
+
+with open('sigtest.enc','w') as f:
+    f.write(a)
+    f.close()
+
+# use the on eon file
+
+with open('sigtest.enc','rib') as f:
+    b = f.read()
+
+c = decode_message(b)
+print c
+msgout = c['body']
+if msgout == msg:
+    print 'Success'
+else:
+    print 'Fail'
 
 
 

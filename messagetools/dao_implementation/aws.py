@@ -28,6 +28,7 @@ import re
 #from boto3 import Session
 import boto
 from boto.sqs.message import RawMessage
+
 import json
 
 # import datetime
@@ -55,17 +56,18 @@ class File(object):
         self._event_no = 0
 
     def recv_message(self):
-        message = get_mockdata_message('aws', self._conf['SQS_QUEUE'], self._event_no)
+        message = get_mockdata_message('aws', self._conf, self._event_no)
         self._event_no += 1
         return message
     
     def recv_and_process(self, handler, max=1):
         ntot = 0
         nvalid = 0
+        logger = logging.getLogger(__name__)
 
         logger.debug('recv and proc: no=%d, max=%d' % (self._event_no, max))
         for n in range(0,max):
-           message = get_mockdata_message('aws', self._conf['SQS_QUEUE'], self._event_no)
+           message = get_mockdata_message('aws', self._conf, self._event_no)
     
            if message==None: 
                break
@@ -91,6 +93,11 @@ class Live(object):
         sns_connection.publish(self._conf['SNS_ARN'], b64msg, 'iam-message')
 
 
+    def get_all_queues(self):
+        sqs_connection = boto.connect_sqs(aws_access_key_id=self._conf['SQS_KEYID'], aws_secret_access_key=self._conf['SQS_KEY'])
+        queues = sqs_connection.get_all_queues()
+        return queues
+       
     def get_queue(self):
         #boto2
         #sqs_connection = boto3.connect_sqs(aws_access_key_id=self._conf['SQS_KEYID'], aws_secret_access_key=self._conf['SQS_KEY'])
