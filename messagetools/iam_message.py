@@ -157,7 +157,7 @@ def decode_message(b64msg):
     #python 3 fix--no implicit conversion from bytes to string and json.loads will break
     # get the iam message
     try:
-        msgstr = base64.b64decode(b64msg).encode('utf8','ignore')
+        msgstr = base64.b64decode(b64msg).decode('utf8','ignore')
     except TypeError:
         logger.info( 'Not an IAM message: not base64')
         return None

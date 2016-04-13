@@ -1,6 +1,6 @@
 # iam-messaging implementation for non-django applications
 
-import WdEventSettings
+#import WdEventSettings
 
 # from messagetools.mock.mock_http import MockHTTP
 from messagetools.dao_implementation.aws import File as AWSFile
@@ -18,8 +18,8 @@ class DAO_BASE(object):
         if 'RUN_MODE' in conf:
             self._run_mode = conf['RUN_MODE']
         else:
-            import settings
-            self._run_mode = settings.RUN_MODE
+            import WdEventSettings
+            self._run_mode = WdEventSettings.RUN_MODE
 
     def _get_queue(self):
         dao = self._getDAO()
