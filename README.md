@@ -1,8 +1,9 @@
 ## Python messaging library
 
-These libraries send and receive messages on AWS and (later) Azure message busses.
+This is a fork of the main IAM messaging library.  This version uses the "cryptography" package instead of M2Crypto.  It is also python3 friendly.  Not all functions have had the crypto functionality ported, and not all functions are python 3 friendly.  For now, basic message fetching and decoding works.  It isn't tested beyond that.  
 
-For python, at least, mock message capability is provided
+Main project is at:  https://github.com/UWIT-IAM/iam-messaging
+
 
 
 
